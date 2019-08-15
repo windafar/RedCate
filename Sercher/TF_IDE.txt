@@ -1,0 +1,19 @@
+(function(world,doctotal)
+{
+    var collection = db.getCollection(world);
+    var docindexs= collection.find({});
+    
+    var worldHitDoc=collection.count();
+    var tf_ide=0;
+    var result={};
+    for(var j=0; j<worldHitDoc; j++)
+    {
+        var docWorldTotal= docindexs[j].DocumentWorldTotal
+        var docHitWorld = docindexs[j].WordFrequency
+        var TF = docHitWorld/docWorldTotal;
+        var IDE = Math.log(doctotal/worldHitDoc,2);
+        tf_ide = TF*IDE;
+        result[docindexs[j].DocId]=tf_ide
+    }
+    return result;
+    })("²»³ö",doctotal);

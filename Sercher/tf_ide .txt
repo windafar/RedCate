@@ -1,0 +1,20 @@
+use DocumentDataDatabase
+var doctotal= db.getCollection('DocumentDataCollection').count();
+use SercherIndexDatabaseA
+var tf_ide=(function(world,doctotal)
+{
+    var collection = db.getCollection(world);
+    var docindexs= collection.find({});
+    
+    var worldHitDoc=collection.count();
+    var tf_ide=0;
+    for(var j=0; j<worldHitDoc; j++)
+    {
+        var docWorldTotal= docindexs[j].DocumentWorldTotal
+        var docHitWorld = docindexs[j].WordFrequency
+        var TF = { "$divide":[docHitWorld, docWorldTotal]};
+        var IDE = { "$log":[{"$divide":[doctotal, worldHitDoc]}, 2]};
+        tf_ide = {"$add":[tf_ide,{"$multiply":[TF, IDE]}]}
+    }
+    return tf_ide;
+    })("²»³ö",doctotal);
