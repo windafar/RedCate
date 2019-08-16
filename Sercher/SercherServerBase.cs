@@ -32,7 +32,7 @@ namespace Sercher
 
         public void BuildSercherIndexToMongoDB(Progress progress = null)
         {
-            hashLoadBalance.RemoveDBData();
+            //hashLoadBalance.RemoveDBData();
             long UpdateCount = 0;
             hashLoadBalance.SetServerDBCount();
             Helper.GetNotIndexDocument().ForEach(x =>

@@ -97,6 +97,29 @@ namespace Sercher
             documentCollction.InsertOne(doc);
 
         }
+        static public void UpdateDocument(Document doc, string ip)
+        {
+            var filter = Builders<Document>.Filter.Eq(x => x._id, doc._id);
+            var updated1 = Builders<Document>.Update
+                .Set(x => x.hasIndexed, doc.hasIndexed)
+                .Set(x => x.Name, doc.Name)
+                .Set(x => x.Url, doc.Url);
+            documentCollction.UpdateOne(filter, updated1, new UpdateOptions() { IsUpsert = false });
+            //documentCollction.InsertOne(doc);
+        }
+        static public void DelDocumentById(ObjectId docid, string ip)
+        {
+            var filter = Builders<Document>.Filter.Eq(x => x._id, docid);
+            documentCollction.DeleteOne(filter);
+        }
+
+        static public void DelIndexAndDocument(this ServerDB serverDB,string CollectionName, ObjectId docId)
+        {
+            serverDB.GetSercherIndexDb().GetCollection<DocumentIndex>(CollectionName)
+                .DeleteOne(x => x.DocId == docId);
+                ;
+            documentCollction.DeleteOne(x => x._id == docId);
+        }
 
         static public void UploadDocumentIndex(string world,DocumentIndex documentIndex, string ip,string databaseName)
         {
@@ -183,10 +206,17 @@ namespace Sercher
             double IDE = Math.Log(ArticleTotal / ArctNumInCurWord, 2);
             return TF * IDE;
         }
-
+        /// <summary>
+        /// TF-IDE算法在数据库的实现
+        /// </summary>
+        /// <param name="serverDB"></param>
+        /// <param name="world"></param>
+        /// <param name="doctotal"></param>
+        /// <param name="action"></param>
         public static void GetSercherResult(this ServerDB serverDB, string world,int doctotal,Action<ObjectId,double> action)
         {
-            string func =string.Format(@"(function(world,doctotal)
+            //string func1 =string.Format(@"(function(h,d){0}var g=db.getCollection(h);var m=g.find({0}{1});var b=g.count();var i=0;var n=[];for(var e=0;e<b;e++){0}var l=m[e].DocumentWorldTotal;var c=m[e].WordFrequency;var k=c/l;var a=Math.log(d/b,2);i=k*a;var f={0}{1};f.id=m[e].DocId;f.tf_ide=i;n.push(f){1}return n{1})('{2}',{3});", "{","}", world, doctotal);
+            string func = string.Format(@"(function(world,doctotal)
                             {0}
                                 var collection = db.getCollection(world);
                                 var docindexs= collection.find({0}{1});
@@ -207,7 +237,8 @@ namespace Sercher
                                     result.push(obj);
                                 {1}
                                 return result;
-                                {1})('{2}',{3});", "{","}", world, doctotal);
+                                {1})('{2}',{3});", "{", "}", world, doctotal);
+
             string connectionStrSource = Config.config.GetConnectionStr(serverDB.Ip);
             MongoClient _client = new MongoClient(connectionStrSource);
             var ser= _client.GetServer();
