@@ -10,16 +10,25 @@ namespace Sercher
     {
         static public Config config = new Config();
 
-        string connectionStr = "mongodb://{0}:27017";
         string documentDataDatabaseName = "DocumentDataDatabase", documentDataCollectionName = "DocumentDataCollection";
         string worldDatabaseName = "WorldDatabase", worldCollectionName = "WorldCollection";
         int indexContextLimt = 100;
-
-        public string GetConnectionStr(string ip) { return string.Format(connectionStr, ip); }
+        int indexCachSum = 100000;
+        public string GetConnectionStr(string ip)
+        {
+            if (ip.IndexOf(":") == -1)
+                return string.Format("mongodb://{0}:{1}", ip, "27017");
+            else
+                return string.Format("mongodb://{0}", ip);
+        }
         public string DocumentDataDatabaseName { get => documentDataDatabaseName; set => documentDataDatabaseName = value; }
         public string DocumentDataCollectionName { get => documentDataCollectionName; set => documentDataCollectionName = value; }
         public string WorldDatabaseName { get => worldDatabaseName; set => worldDatabaseName = value; }
         public string WorldCollectionName { get => worldCollectionName; set => worldCollectionName = value; }
         public int IndexContextLimt { get => indexContextLimt; set => indexContextLimt = value; }
+        /// <summary>
+        /// the cach size during the index be upload 
+        /// </summary>
+        public int IndexCachSum { get => indexCachSum; set => indexCachSum = value; }
     }
 }

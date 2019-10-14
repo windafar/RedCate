@@ -14,6 +14,22 @@ namespace Sercher
     [Serializable]
     public class DocumentIndex
     {
+        public DocumentIndex()
+        {
+        }
+
+        public DocumentIndex(DocumentIndex documentIndex)
+        {
+
+            DocId = documentIndex.DocId;
+            DocumentWorldTotal = documentIndex.DocumentWorldTotal;
+            IndexTime = documentIndex.IndexTime;
+            _id = documentIndex._id;
+            WordFrequency = documentIndex.WordFrequency;
+            BeginIndex = documentIndex.BeginIndex;
+        }
+
+
         public ObjectId DocId { set; get; }
         public int DocumentWorldTotal { set; get; }
         /// <summary>
@@ -31,6 +47,8 @@ namespace Sercher
         /// 索引词语在文中的位置
         /// </summary>
         public List<int> BeginIndex { set; get; }
+
+
 
     }
 

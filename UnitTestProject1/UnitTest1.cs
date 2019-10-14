@@ -44,16 +44,16 @@ namespace UnitTestProject1
         [TestMethod]
         public void TestIndex()
         {
-            foreach (var path in Directory.GetFiles(@"C:\Users\yjdcb\Desktop\新建文件夹", "*.txt"))
-                Sercher.Helper.UploadDocument(new Document { hasIndexed =  Document.HasIndexed.none, Name = new FileInfo(path).Name, Url = path, _id=new MongoDB.Bson.ObjectId() }, Config.config.GetConnectionStr("localhost"));
-          //  var se = new SercherServerBase();
+           // foreach (var path in Directory.GetFiles(@"F:\资料\yuliao", "*.txt", SearchOption.AllDirectories))
+           //     Sercher.Helper.UploadDocument(new Document { hasIndexed =  Document.HasIndexed.none, Name = new FileInfo(path).Name, Url = path, _id=new MongoDB.Bson.ObjectId() }, Config.config.GetConnectionStr("localhost"));
+            var se = new SercherServerBase();
             
-            //se.BuildSercherIndexToMongoDB();
+            se.BuildSercherIndexToMongoDB();
         }
         [TestMethod]
         public void TestSearcher()
         {
-           new SercherServerBase().Searcher("我");
+           new SercherServerBase().Searcher("");
         }
     
     }

@@ -26,7 +26,8 @@ namespace Sercher
             else
             {
                 string connectionStr = Config.config.GetConnectionStr(serverDB.Ip);
-                MongoClient _client = new MongoClient(new MongoClientSettings { MinConnectionPoolSize = 120, WriteConcern = new WriteConcern(0), MaxConnectionLifeTime = TimeSpan.FromSeconds(1800), Server = new MongoServerAddress("localhost") });
+                //MongoClient _client = new MongoClient(new MongoClientSettings { MinConnectionPoolSize = 120, WriteConcern = new WriteConcern(0), MaxConnectionLifeTime = TimeSpan.FromSeconds(1800), Server = new MongoServerAddress("localhost") });
+                MongoClient _client = new MongoClient(connectionStr);
 
                 _database = _client.GetDatabase(serverDB.DbName);
                 MongoDatabaseConnected.Add(serverDB.Ip + serverDB.DbName, _database);
@@ -121,7 +122,7 @@ namespace Sercher
             documentCollction.DeleteOne(x => x._id == docId);
         }
 
-        static public void UploadDocumentIndex(string world,DocumentIndex documentIndex, string ip,string databaseName)
+        static public void UploadDocumentIndex(string world,DocumentIndex[] documentIndex, string ip,string databaseName)
         {
             IMongoDatabase _database = GetSercherIndexDb(new ServerDB { DbName = databaseName, Ip = ip, WorldCount = 0 });
             //string connectionStr = Config.config.GetConnectionStr(ip);
@@ -138,16 +139,16 @@ namespace Sercher
             //    .Set(x => x.WordFrequency, documentIndex.WordFrequency)
             //    ;
             //collection.FindOneAndUpdate<DocumentIndex>(filter, updated1,new FindOneAndUpdateOptions<DocumentIndex, DocumentIndex>() { IsUpsert=true});
-            collection.InsertOne(documentIndex);
+            collection.InsertMany(documentIndex, new InsertManyOptions { BypassDocumentValidation = false, IsOrdered = false }) ;
         }
-        static public void UploadDocumentIndex(this ServerDB serverDB,string world, DocumentIndex documentIndex)
+        static public void UploadDocumentIndex(this ServerDB serverDB,string world, DocumentIndex[] documentIndex)
         {
             UploadDocumentIndex(world,documentIndex, serverDB.Ip,serverDB.DbName);
         }
 
         static public List<Document> GetNotIndexDocument()
         {
-           return documentCollction.Find(x => x.hasIndexed== Document.HasIndexed.none).ToList();
+           return documentCollction.Find(x => x.hasIndexed!= Document.HasIndexed.Indexed).ToList();
         }
 
         static public List<DocumentIndex> GetDocumentIndex(this ServerDB serverDB,string collectionName,int start,int length, out long total)
@@ -215,29 +216,29 @@ namespace Sercher
         /// <param name="action"></param>
         public static void GetSercherResult(this ServerDB serverDB, string world,int doctotal,Action<ObjectId,double> action)
         {
-            //string func1 =string.Format(@"(function(h,d){0}var g=db.getCollection(h);var m=g.find({0}{1});var b=g.count();var i=0;var n=[];for(var e=0;e<b;e++){0}var l=m[e].DocumentWorldTotal;var c=m[e].WordFrequency;var k=c/l;var a=Math.log(d/b,2);i=k*a;var f={0}{1};f.id=m[e].DocId;f.tf_ide=i;n.push(f){1}return n{1})('{2}',{3});", "{","}", world, doctotal);
-            string func = string.Format(@"(function(world,doctotal)
-                            {0}
-                                var collection = db.getCollection(world);
-                                var docindexs= collection.find({0}{1});
+            string func =string.Format(@"(function(h,d){0}var g=db.getCollection(h);var m=g.find({0}{1});var b=g.count();var i=0;var n=[];for(var e=0;e<b;e++){0}var l=m[e].DocumentWorldTotal;var c=m[e].WordFrequency;var k=c/l;var a=Math.log(d/b,2);i=k*a;var f={0}{1};f.id=m[e].DocId;f.tf_ide=i;n.push(f){1}return n{1})('{2}',{3});", "{","}", world, doctotal);
+            //string func = string.Format(@"(function(world,doctotal)
+            //                {0}
+            //                    var collection = db.getCollection(world);
+            //                    var docindexs= collection.find({0}{1});
     
-                                var worldHitDoc=collection.count();
-                                var tf_ide=0;
-                                var result=[];
-                                for(var j=0; j<worldHitDoc; j++)
-                                {0}
-                                    var docWorldTotal= docindexs[j].DocumentWorldTotal
-                                    var docHitWorld = docindexs[j].WordFrequency
-                                    var TF = docHitWorld/docWorldTotal;
-                                    var IDE = Math.log(doctotal/worldHitDoc,2);
-                                    tf_ide = TF*IDE;
-                                    var obj={0}{1};
-                                    obj.id=docindexs[j].DocId;
-                                    obj.tf_ide=tf_ide
-                                    result.push(obj);
-                                {1}
-                                return result;
-                                {1})('{2}',{3});", "{", "}", world, doctotal);
+            //                    var worldHitDoc=collection.count();
+            //                    var tf_ide=0;
+            //                    var result=[];
+            //                    for(var j=0; j<worldHitDoc; j++)
+            //                    {0}
+            //                        var docWorldTotal= docindexs[j].DocumentWorldTotal
+            //                        var docHitWorld = docindexs[j].WordFrequency
+            //                        var TF = docHitWorld/docWorldTotal;
+            //                        var IDE = Math.log(doctotal/worldHitDoc,2);
+            //                        tf_ide = TF*IDE;
+            //                        var obj={0}{1};
+            //                        obj.id=docindexs[j].DocId;
+            //                        obj.tf_ide=tf_ide
+            //                        result.push(obj);
+            //                    {1}
+            //                    return result;
+            //                    {1})('{2}',{3});", "{", "}", world, doctotal);
 
             string connectionStrSource = Config.config.GetConnectionStr(serverDB.Ip);
             MongoClient _client = new MongoClient(connectionStrSource);

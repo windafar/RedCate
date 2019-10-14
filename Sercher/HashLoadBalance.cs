@@ -28,28 +28,41 @@ namespace Sercher
         private int serverDBTotalNum;
         public ConsistentHashLoadBalance()
         {
-            List<List<ServerDB>> serverlists = new List<List<ServerDB>>();
-            serverlists.Add(new List<ServerDB>
-                    { new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseA" },
-                 //     new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseA2" },
-                    });
-            serverlists.Add(new List<ServerDB>
-                    { new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseB" },
-                 //     new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseB2" },
-                 //     new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseB3" },
-                    });
-            serverlists.Add(new List<ServerDB>
-                    { new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseC" },
-                  //    new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseC2" },
-                    });
-            serverlists.Add(new List<ServerDB>
-                    { new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseD" },
-                   //   new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseD2" },
-                    });
-            serverlists.Add(new List<ServerDB>
-                    { new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseE" },
-                     // new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseE2" },
-                    });
+            List<ServerDB> serverlists = new List<ServerDB>();
+            serverlists.Add(
+                     new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseA" }
+                    );
+            serverlists.Add(
+                     new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseB" }
+                    );
+            serverlists.Add(
+                     new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseC" }
+                    );
+            serverlists.Add(
+                     new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseD" }
+                    );
+            serverlists.Add(
+                     new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseE" }
+                    );
+            serverlists.Add(
+         new ServerDB { Ip = "localhost", DbName = "SercherIndexDatabaseF" }
+        );
+            serverlists.Add(
+         new ServerDB { Ip = "localhost", DbName = "SercherIndexDatabaseG" }
+        );
+            serverlists.Add(
+         new ServerDB { Ip = "localhost", DbName = "SercherIndexDatabaseH" }
+        );
+            serverlists.Add(
+         new ServerDB { Ip = "localhost", DbName = "SercherIndexDatabaseI" }
+        );
+            serverlists.Add(
+         new ServerDB { Ip = "localhost", DbName = "SercherIndexDatabaseJ" }
+        );
+            serverlists.Add(
+         new ServerDB { Ip = "localhost", DbName = "SercherIndexDatabaseK" }
+        );
+
             hashTreeMap.Init(serverlists);
 
             ///remark:
@@ -61,7 +74,7 @@ namespace Sercher
             ///  另外如果只是关于数据的均衡负载，可以使用mongodb的官方实现】
         }
 
-        HashTreeMap<List<ServerDB>> hashTreeMap = new HashTreeMap<List<ServerDB>>();
+        HashTreeMap<ServerDB> hashTreeMap = new HashTreeMap<ServerDB>();
 
         public int ServerDBTotalNum { get => hashTreeMap.Count(); }
 
@@ -84,11 +97,11 @@ namespace Sercher
             return result;
         }
 
-        public List<ServerDB> FindCloseServerDBsByHash(long hash)
+        public ServerDB FindCloseServerDBsByHash(long hash)
         {
             return hashTreeMap.Findbigger(hash).Value;
         }
-        public List<ServerDB> FindCloseServerDBsByWorld(string world)
+        public ServerDB FindCloseServerDBsByWorld(string world)
         {
             return hashTreeMap.Findbigger(GetHashByWorld(world)).Value;
         }
@@ -101,56 +114,48 @@ namespace Sercher
 
             foreach (var serverdb in hashTreeMap)
             {//遍历hash键值对，其值是映射列表
-                foreach (var m in serverdb.Value)
-                {
+                var m = serverdb.Value;
                     if (vs.Contains(m.Ip + m.DbName)) continue;
                     m.WorldCount = Helper.GetSercherIndexCollectionCount(m.Ip,m.DbName);
                     vs.Add(m.Ip + m.DbName);
-                }
             }
         }
         /// <summary>
         /// 加入一个hash映射（纵向扩展，分布集合）
         /// </summary>
-        /// <param name="serverDBs"></param>
-        public void AddHashMap(List<ServerDB> serverDBs,bool ReSetServerDBCount=true)
+        /// <param name="serverDB"></param>
+        public void AddHashMap(ServerDB serverDB,bool ReSetServerDBCount=true)
         {
             //寻找集合最多的数据库的逆时针方向，增加一个节点
             if(ReSetServerDBCount)
                 SetServerDBCount();
             long loadMaxhash = hashTreeMap
-                 .OrderByDescending(x => x.Value.First().WorldCount).First().Key;
+                 .OrderByDescending(x => x.Value.WorldCount).First().Key;
             long loadMinhash = hashTreeMap.FindSimler(loadMaxhash).Key;
             long curNodeHash = (loadMaxhash - loadMinhash) / 2;
 
             //数据迁移
-            var loadMaxDBs = hashTreeMap[loadMaxhash];
+            var loadMaxDB = hashTreeMap[loadMaxhash];
             HashSet<string> worldList=new HashSet<string>();
-            loadMaxDBs.ForEach(x =>
-            {
-                x.GetSercherIndexCollectionNameList()
+            loadMaxDB.GetSercherIndexCollectionNameList()
                 .ForEach(y => { if (!worldList.Contains(y)) worldList.Add(y); });
-            });
             var waitDelList = new List<string>();
             foreach(var x in worldList)
             {
                 if (curNodeHash > GetHashByWorld(x))
                 {
-                    loadMaxDBs.ForEach(db =>
-                    {
-                        var destdb = serverDBs.OrderBy(y => y.WorldCount).First();
-                        destdb.WorldCount++;
-                        db.CopyCollection(x, destdb);
-                    });
+                    var destdb = serverDB;
+                    destdb.WorldCount++;
+                    loadMaxDB.CopyCollection(x, destdb);
                     waitDelList.Add(x);
                 }
             };
 
             //加入
-            hashTreeMap[curNodeHash] = serverDBs;
+            hashTreeMap[curNodeHash] = serverDB;
 
             //删除重映射集合
-            waitDelList.ForEach(collection => loadMaxDBs.ForEach(db => db.DelCollectionAsync(collection)));
+            waitDelList.ForEach(collection => loadMaxDB.DelCollectionAsync(collection));
             
         }
 
@@ -163,12 +168,12 @@ namespace Sercher
             throw new NotImplementedException();
         }
         
-        public void RemoveDBData()
+        public void RemoveAllDBData()
         {
             var g = this.hashTreeMap.GetOrderedEnumerator();
             while (g.MoveNext())
             {
-                g.Current.Value.ForEach(x => x.DeleDb());
+                g.Current.Value.DeleDb();
             }
 
         }

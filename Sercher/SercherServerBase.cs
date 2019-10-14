@@ -9,33 +9,71 @@ using System.Linq;
 using System.Threading.Tasks;
 //using MongoDB.Driver;//test
 using System.Diagnostics;
+using NGenerics.DataStructures.Trees;
+using System.Threading;
 
 namespace Sercher
 {
+    public enum StartMode
+    {
+        /// <summary>
+        /// 只允许基于单词（集合）的分布式模式，相对更快的搜索，更快的启动
+        /// </summary>
+        Quick,
+        /// <summary>
+        /// 完全模式，允许任意切割的分布式
+        /// </summary>
+        Perfect
+    }
+
+    public class Progress
+    {
+        public int totalFileNum { set; get; }
+        public int curFileIndex { set; get; }
+    }
+
+    public class RelationDocumentResult
+    {
+        public ObjectId documentIdex { set; get; }
+        public double dependency { set; get; }
+        public Document doc { set; get; }
+    }
+
+    class IndexCach
+    {
+        public string world;
+        public IEnumerable<DocumentIndex> indeies;
+
+        public IndexCach(string world, IEnumerable<DocumentIndex> indeies)
+        {
+            this.world = world;
+            this.indeies = indeies;
+        }
+    }
+
     public class SercherServerBase
     {
-        object lockobj = new object(); 
-        public class RelationDocumentResult
-        {
-            public ObjectId documentIdex { set; get; }
-            public double dependency { set; get; }
-            public Document doc { set; get; }
-        }
-
-        private class docwf
-        {
-           public int WordFrequency;
-            public int docworldtotal;
-        }
+        object lockobj = new object();
+        StartMode startMode;
 
         ConsistentHashLoadBalance hashLoadBalance = new ConsistentHashLoadBalance();
 
-        public void BuildSercherIndexToMongoDB(Progress progress = null)
+        public SercherServerBase(StartMode startMode= StartMode.Quick)
         {
-            //hashLoadBalance.RemoveDBData();
+            this.startMode = startMode;
+        }
+
+        public void BuildSercherIndexToMongoDB( Progress progress = null)
+        {
+            hashLoadBalance.RemoveAllDBData();
             long UpdateCount = 0;
+
             hashLoadBalance.SetServerDBCount();
-            Helper.GetNotIndexDocument().ForEach(x =>
+            RedBlackTree<string, List<DocumentIndex>> documentIndices_cachList = new RedBlackTree<string, List<DocumentIndex>>();
+            List<Document> documents_cachList = new List<Document>();
+            var DocumentToatalList = Helper.GetNotIndexDocument();
+            int remainder = DocumentToatalList.Count;
+            DocumentToatalList.ForEach(x =>
             {
                 x.UpdateDocumentStateToIndexed(Document.HasIndexed.Indexing);
                 System.Diagnostics.Stopwatch watch = new Stopwatch();
@@ -45,19 +83,19 @@ namespace Sercher
                 Dictionary<string, DocumentIndex> documentIndices = new Dictionary<string, DocumentIndex>();
                 foreach (var token in textSplit)
                 {
-                    string text = token.Word;
-                        if (text[0] < 0x4E00 || text[0] > 0x9FFF)//非中文
-                            if (text[0] < 0x41 || text[0] > 0x5a)//非大小字母
-                                if (text[0] < 0x61 || text[0] > 0x7a)//非小写字母
+                    string world = token.Word;
+                        if (world[0] < 0x4E00 || world[0] > 0x9FFF)//非中文
+                            if (world[0] < 0x41 || world[0] > 0x5a)//非大小字母
+                                if (world[0] < 0x61 || world[0] > 0x7a)//非小写字母
                                     continue;
-
-                    if (documentIndices.TryGetValue(text, out DocumentIndex documentIndex))
+                    //记录一个文档的所有相同词汇
+                    if (documentIndices.TryGetValue(world, out DocumentIndex documentIndex))
                     {
                         documentIndex.WordFrequency++;
                         documentIndex.BeginIndex.Add(token.StartIndex);
                     }
                     else
-                        documentIndices[text] = new DocumentIndex
+                        documentIndices[world] = new DocumentIndex
                         {
                             IndexTime = DateTime.Now,
                             DocId = x._id,
@@ -70,18 +108,43 @@ namespace Sercher
                 foreach (var kvp in documentIndices)
                 {
                     kvp.Value.DocumentWorldTotal = documentIndices.Count;
-                    UpdateIndex(kvp.Key, kvp.Value);
+                    //UpdateIndex(kvp.Key, kvp.Value);
+                    if (documentIndices_cachList.ContainsKey(kvp.Key.ToString()))
+                        documentIndices_cachList[kvp.Key].Add(new DocumentIndex(kvp.Value));
+                    else
+                        documentIndices_cachList.Add(kvp.Key, new List<DocumentIndex>() { kvp.Value });
                     UpdateCount++;
-                    Console.Write(kvp.Key);
+                    //Console.Write(kvp.Key);
+
                 }
-                x.UpdateDocumentStateToIndexed(Document.HasIndexed.Indexed);
-                watch.Stop();
-                var mSeconds = watch.ElapsedMilliseconds;
-                Console.WriteLine("文档" + x.Name + ",,大小：" + new FileInfo(x.Url).Length / 1024 + "kb\r\n" + "消耗时间：" + mSeconds / 1000);
-                Debug.Print("文档" + x.Name + ",,大小：" + new FileInfo(x.Url).Length / 1024 + "kb\r\n" + "消耗时间：" + mSeconds / 1000);
+                documents_cachList.Add(x);
+                remainder--;
                 //均衡检查，放在文档的循环中，保证一篇文档的索引在一个数据库中
-                if (UpdateCount > 2000)
+                double temp_i = 0.0;
+                if (UpdateCount > Config.config.IndexCachSum || remainder == 0)
                 {
+                    Console.WriteLine("当前准备上传数目："+UpdateCount);
+                    foreach (var keyValue in documentIndices_cachList)
+                    {
+                        temp_i++;
+                        string str = "当前上传：" + temp_i / documentIndices_cachList.Count * 100.0 + "%" + ",剩余：" + remainder;
+                        backspace(str.Length+8);
+                        Console.Write(str);
+                        //Thread.Sleep(50);
+                        UpdateIndexToServer(keyValue.Key, keyValue.Value.ToArray());
+                    }
+                    temp_i = 0;
+                    documentIndices_cachList.Clear();
+
+                    watch.Stop();
+                    documents_cachList.ForEach(xx =>
+                    {
+                        xx.UpdateDocumentStateToIndexed(Document.HasIndexed.Indexed);
+
+                        var mSeconds = watch.ElapsedMilliseconds;
+                        Console.WriteLine("文档" + xx.Name + ",,大小：" + new FileInfo(xx.Url).Length / 1024 + "kb\r\n" + "消耗时间：" + mSeconds / 1000);
+                        Debug.Print("文档" + xx.Name + ",,大小：" + new FileInfo(xx.Url).Length / 1024 + "kb\r\n" + "消耗时间：" + mSeconds / 1000);
+                    });
                     UpdateCount = 0;
                     hashLoadBalance.SetServerDBCount();
                 }
@@ -94,10 +157,9 @@ namespace Sercher
         /// </summary>
         /// <param name="world"></param>
         /// <param name="documentIndex"></param>
-        void UpdateIndex(string world, DocumentIndex documentIndices)
+        void UpdateIndexToServer(string world, DocumentIndex[] documentIndices)
         {
                 hashLoadBalance.FindCloseServerDBsByWorld(world)
-                .OrderBy(x=>x.WorldCount).First()
                 .UploadDocumentIndex(world, documentIndices);
         }
 
@@ -111,9 +173,8 @@ namespace Sercher
 
             Parallel.ForEach(wordList, (world) =>
             {
-                var dbList = hashLoadBalance.FindCloseServerDBsByWorld(world);
-                int dbNum = dbList.Count();
-                dbList.First().GetSercherResult(world, docTotal, (x, y) =>
+                var db = hashLoadBalance.FindCloseServerDBsByWorld(world);
+                db.GetSercherResult(world, docTotal, (x, y) =>
                   {
                       lock (lockobj)
                       {
@@ -133,11 +194,10 @@ namespace Sercher
                  }).OrderByDescending(docresult => docresult.dependency)//最后根据相关性总和排序
                  .ToArray();
         }
-
-        public class Progress
+        static void backspace(int n)
         {
-            public int totalFileNum { set; get; }
-            public int curFileIndex { set; get; }
+            for (var i = 0; i < n; ++i)
+                Console.Write((char)0x8);
         }
     }
 
