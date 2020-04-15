@@ -28,7 +28,7 @@ namespace UnitTestProject1
         public void TesGethash()
         {
             ConsistentHashLoadBalance consistentHash = new ConsistentHashLoadBalance();
-            consistentHash.GetHashByWorld("我都");
+           // consistentHash.GetHashByWorld("我都");
         }
 
         public void mongodbtest()
@@ -38,22 +38,27 @@ namespace UnitTestProject1
         [TestMethod]
         public void testjiebaSegmenter()
         {
-            var text = TextHelper.BeforeEncodingClass.GetText(File.ReadAllBytes("Www.Chnxp.Com.Cn 黑魔导.txt"));
-           var u= PeripheralTool.TextHelper.Segmenter(text);
+            var text = Peripheral.BeforeEncodingClass.GetText(File.ReadAllBytes("Www.Chnxp.Com.Cn 黑魔导.txt"));
+           var u= PeripheralTool.Peripheral.Segmenter(text);
         }
         [TestMethod]
         public void TestIndex()
         {
-           // foreach (var path in Directory.GetFiles(@"F:\资料\yuliao", "*.txt", SearchOption.AllDirectories))
-           //     Sercher.Helper.UploadDocument(new Document { hasIndexed =  Document.HasIndexed.none, Name = new FileInfo(path).Name, Url = path, _id=new MongoDB.Bson.ObjectId() }, Config.config.GetConnectionStr("localhost"));
+            foreach (var path in Directory.GetFiles(@"C:\Users\yjdcb\Desktop\新建文件夹", "*.txt", SearchOption.AllDirectories))
+                (new SercherIndexesDB { DbName = "mydb", Ip = "WIN-T9ASCBISP3P\\MYSQL" }).UploadDocument(new Document() { hasIndexed = (int)Document.HasIndexed.none, Name = new FileInfo(path).Name, Url = path });
+
             var se = new SercherServerBase();
             
-            se.BuildSercherIndexToMongoDB();
+           // se.BuildSercherIndexToMongoDB();
+
+            
+
+
         }
         [TestMethod]
         public void TestSearcher()
         {
-           new SercherServerBase().Searcher("");
+           new SercherServerBase().Searcher("三");
         }
     
     }

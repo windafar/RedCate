@@ -41,9 +41,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FileSys.cs" />
-    <Compile Include="Helper.cs" />
-    <Compile Include="us_String.cs" />
+    <Compile Include="SerializeHelper.cs" />
+    <Compile Include="TextHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
