@@ -7,176 +7,103 @@ using System.Security.Cryptography;
 using System.Text;
 
 //using System.Linq;
-/// <summary>
-/// 用于解决集合过多和分布式问题
-/// </summary>
+
 namespace Sercher
 {
-   public class ServerDB
+    /// <summary>
+    /// 基于hash映射的分布式的实现
+    /// </summary>
+    /// <remarks>此类暂定和SercherDb类型绑在一起</remarks>
+    public class ConsistentHashLoadBalance<T> : IConsistentHashLoadBalance<T>
     {
-        string ip;
-        int worldCount;
-        string dbName;
-        bool isOkey;//要是删除重复映射的时候词太多太占内存可以用这个字段和带过滤的findbigger方法实时更新可用映射
-        public string Ip { get => ip; set => ip = value; }
-        public int WorldCount { get => worldCount; set => worldCount = value; }
-        public string DbName { get => dbName; set => dbName = value; }
-    }
-
-    public class ConsistentHashLoadBalance
-    {
-        private int serverDBTotalNum;
-        public ConsistentHashLoadBalance()
+        public ConsistentHashLoadBalance(List<T> serverlists)
         {
-            List<ServerDB> serverlists = new List<ServerDB>();
-            serverlists.Add(
-                     new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseA" }
-                    );
-            serverlists.Add(
-                     new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseB" }
-                    );
-            serverlists.Add(
-                     new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseC" }
-                    );
-            serverlists.Add(
-                     new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseD" }
-                    );
-            serverlists.Add(
-                     new ServerDB {Ip="localhost",DbName="SercherIndexDatabaseE" }
-                    );
-            serverlists.Add(
-         new ServerDB { Ip = "localhost", DbName = "SercherIndexDatabaseF" }
-        );
-            serverlists.Add(
-         new ServerDB { Ip = "localhost", DbName = "SercherIndexDatabaseG" }
-        );
-            serverlists.Add(
-         new ServerDB { Ip = "localhost", DbName = "SercherIndexDatabaseH" }
-        );
-            serverlists.Add(
-         new ServerDB { Ip = "localhost", DbName = "SercherIndexDatabaseI" }
-        );
-            serverlists.Add(
-         new ServerDB { Ip = "localhost", DbName = "SercherIndexDatabaseJ" }
-        );
-            serverlists.Add(
-         new ServerDB { Ip = "localhost", DbName = "SercherIndexDatabaseK" }
-        );
-
             hashTreeMap.Init(serverlists);
-
-            ///remark:
-            ///serverlists数组的每一项对应一个hash映射
-            ///每次映射得到一个db的列表
-            ///运行索引时会选择列表中最小负载的db进行
-            ///【因为排序是在单个服务器上进行，这导致在单个服务上器数据量小的时候，相关性排序很糟糕】
-            ///【所以像上面的代码都注释掉了，留下一个。
-            ///  另外如果只是关于数据的均衡负载，可以使用mongodb的官方实现】
         }
 
-        HashTreeMap<ServerDB> hashTreeMap = new HashTreeMap<ServerDB>();
+        HashTreeMap<T> hashTreeMap = new HashTreeMap<T>();
 
         public int ServerDBTotalNum { get => hashTreeMap.Count(); }
 
+        public IEnumerable<T> GetServerNodes()
+        {
+            return this.hashTreeMap.Select(x => x.Value);
+        }
 
         /// <summary>
         /// 根据单词获取hash映射
         /// </summary>
         /// <param name="world">world字符串</param>
         /// <returns></returns>
-        public long GetHashByWorld(string world)
+        protected long GetHashByWorld(string world)
         {
             var md = MD5.Create();
-            var by= md.ComputeHash(Encoding.UTF8.GetBytes(world));
+            var by = md.ComputeHash(Encoding.UTF8.GetBytes(world));
             long result = 0;
             for (int i = 0; i < by.Length; i += 8)
             {
-                long BigNum= Math.Abs(BitConverter.ToInt64(by, i));
+                long BigNum = Math.Abs(BitConverter.ToInt64(by, i));
                 result = (Math.Abs(result * 10 + BigNum)) % hashTreeMap.HashSpace;
             }
             return result;
         }
-
-        public ServerDB FindCloseServerDBsByHash(long hash)
-        {
-            return hashTreeMap.Findbigger(hash).Value;
-        }
-        public ServerDB FindCloseServerDBsByWorld(string world)
+        public T FindCloseServerDBsByValue(string world)
         {
             return hashTreeMap.Findbigger(GetHashByWorld(world)).Value;
         }
-        /// <summary>
-        /// 统计各个数据库的集合数
-        /// </summary>
-        public void SetServerDBCount()
-        {
-            HashSet<string> vs = new HashSet<string>();
 
-            foreach (var serverdb in hashTreeMap)
-            {//遍历hash键值对，其值是映射列表
-                var m = serverdb.Value;
-                    if (vs.Contains(m.Ip + m.DbName)) continue;
-                    m.WorldCount = Helper.GetSercherIndexCollectionCount(m.Ip,m.DbName);
-                    vs.Add(m.Ip + m.DbName);
-            }
-        }
         /// <summary>
-        /// 加入一个hash映射（纵向扩展，分布集合）
+        /// 选择最大负载的节点，在其后的区域加入一个新节点
         /// </summary>
-        /// <param name="serverDB"></param>
-        public void AddHashMap(ServerDB serverDB,bool ReSetServerDBCount=true)
+        /// <typeparam name="Key">新的节点的类型</typeparam>
+        /// <param name="serverDB">新的节点</param>
+        /// <param name="MaxKeySelector">指定提取的排序字段</param>
+        /// <param name="EmigrationSouceMap">待迁出数据。T是待迁出的节点，返回List为表名的集合</param>
+        /// <param name="ImmigrationAction">对待每个迁出数据做出的迁入行为。x是待迁出的每个表名</param>
+        /// <returns>迁移的表名集合</returns>
+        public List<string> AddHashMap(T serverDB,
+            Func<KeyValuePair<long, T>, long> MaxKeySelector,
+            Func<T, List<string>> EmigrationSouceMap,
+            Action<T,List<string>> ImmigrationAction
+            )
         {
             //寻找集合最多的数据库的逆时针方向，增加一个节点
-            if(ReSetServerDBCount)
-                SetServerDBCount();
+            // SetServerDBCount();
             long loadMaxhash = hashTreeMap
-                 .OrderByDescending(x => x.Value.WorldCount).First().Key;
+                 .OrderByDescending(x => MaxKeySelector).First().Key;
             long loadMinhash = hashTreeMap.FindSimler(loadMaxhash).Key;
             long curNodeHash = (loadMaxhash - loadMinhash) / 2;
 
-            //数据迁移
+            //数据迁移[因涉及非常多的稀疏表，于是采用select into后分离数据库的方式]
             var loadMaxDB = hashTreeMap[loadMaxhash];
-            HashSet<string> worldList=new HashSet<string>();
-            loadMaxDB.GetSercherIndexCollectionNameList()
-                .ForEach(y => { if (!worldList.Contains(y)) worldList.Add(y); });
-            var waitDelList = new List<string>();
-            foreach(var x in worldList)
-            {
-                if (curNodeHash > GetHashByWorld(x))
-                {
-                    var destdb = serverDB;
-                    destdb.WorldCount++;
-                    loadMaxDB.CopyCollection(x, destdb);
-                    waitDelList.Add(x);
-                }
-            };
+
+            var EmigrationSouceMapResult = EmigrationSouceMap(loadMaxDB)
+                 .Where(x => curNodeHash > GetHashByWorld(x)).ToList();
+
+            ImmigrationAction(loadMaxDB, EmigrationSouceMapResult);
 
             //加入
             hashTreeMap[curNodeHash] = serverDB;
 
             //删除重映射集合
-            waitDelList.ForEach(collection => loadMaxDB.DelCollectionAsync(collection));
-            
+            //waitDelList.ForEach(collection => loadMaxDB.DelCollectionAsync(collection));
+            return EmigrationSouceMapResult;
         }
 
-        /// <summary>
-        /// 在一组配置的服务器组中平衡数据量
-        /// </summary>
-        /// <returns></returns>
-        public int MakeBalance()
+        public void AddHashMap(T serverDB, Func<KeyValuePair<long, T>, long> MaxKeySelector)
+        {
+            long loadMaxhash = hashTreeMap
+             .OrderByDescending(x => MaxKeySelector).First().Key;
+            long loadMinhash = hashTreeMap.FindSimler(loadMaxhash).Key;
+            long curNodeHash = (loadMaxhash - loadMinhash) / 2;
+            hashTreeMap[curNodeHash] = serverDB;
+        }
+
+        public void RemoveHashMap(T serverDB, bool ReSetServerDBCount = true)
         {
             throw new NotImplementedException();
         }
-        
-        public void RemoveAllDBData()
-        {
-            var g = this.hashTreeMap.GetOrderedEnumerator();
-            while (g.MoveNext())
-            {
-                g.Current.Value.DeleDb();
-            }
 
-        }
     }
 
     class HashTreeMap<TValue>:RedBlackTree<long,TValue>
@@ -320,5 +247,3 @@ namespace Sercher
 
 
 }
-///NOTE:一般来说虚拟节点需要配置成真实节点的10倍以上才能打到负载均衡
-///

@@ -18,13 +18,18 @@ namespace mongodb
             var se = new SercherServerBase();
             try
             {
-                se.BuildSercherIndexToMongoDB();
+                se.BuildSercherIndexToSQLDB();
                 Console.ReadKey();
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
             }
+
+         //   se.Searcher("深入人心的探讨").ToList()
+        ////        .ForEach(x => {
+       //             Console.WriteLine(x.doc.Name);
+      //          });
         }
 
         static void testskip()

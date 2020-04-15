@@ -9,7 +9,7 @@ using System.Xml.Serialization;
 
 namespace Tool
 {
-    public static class Helper
+    public static class SerializeHelper
     {
         /// <summary>
         /// 把对象序列化并返回相应的字节

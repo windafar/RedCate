@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Tool
 {
-    public class us_String
+    public class TextHelper
     {
         /// <summary>
         /// 字符串简体转繁体

@@ -1,5 +1,4 @@
-﻿using JiebaNet.Segmenter;
-using Microsoft.VisualBasic;
+﻿using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,35 +9,6 @@ namespace PeripheralTool
 {
     public class TextHelper
     {
-        static public IEnumerable<Token> Segmenter(string str)
-        {
-            JiebaSegmenter jiebaSegmenter = new JiebaSegmenter();
-            return jiebaSegmenter.Tokenize(str, TokenizerMode.Search);
-            //return jiebaSegmenter.CutForSearch(BeforeEncodingClass.GetText(text));//细粒度切分
-        }
-
-
-        ///// <summary>
-        ///// 字符串简体转繁体
-        ///// </summary>
-        ///// <param name="strSimple"></param>
-        ///// <returns></returns>
-        //public static string ToTraditionalChinese(string strSimple)
-        //{
-        //    string strTraditional = Microsoft.VisualBasic.Strings.StrConv(strSimple, Microsoft.VisualBasic.VbStrConv.TraditionalChinese, 0);
-        //    return strTraditional;
-        //}
-
-        ///// <summary>
-        ///// 字符串繁体转简体
-        ///// </summary>
-        ///// <param name="strTraditional"></param>
-        ///// <returns></returns>
-        //public static string ToSimplifiedChinese(string strTraditional)
-        //{
-        //    string strSimple = Microsoft.VisualBasic.Strings.StrConv(strTraditional, VbStrConv.SimplifiedChinese, 0);
-        //    return strSimple;
-        //}
 
         #region 检测字符编码1
         /// <summary>
@@ -2551,10 +2521,6 @@ namespace PeripheralTool
 
         public static class BeforeEncodingClass
         {
-           static BeforeEncodingClass()
-            {
-                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            }
             public static string GetText(byte[] buff)
             {
                 string strReslut = string.Empty;
