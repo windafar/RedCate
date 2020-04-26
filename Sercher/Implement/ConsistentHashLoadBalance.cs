@@ -33,12 +33,12 @@ namespace Sercher
         /// <summary>
         /// 根据单词获取hash映射
         /// </summary>
-        /// <param name="world">world字符串</param>
+        /// <param name="word">word字符串</param>
         /// <returns></returns>
-        protected long GetHashByWorld(string world)
+        protected long GetHashByWord(string word)
         {
             var md = MD5.Create();
-            var by = md.ComputeHash(Encoding.UTF8.GetBytes(world));
+            var by = md.ComputeHash(Encoding.UTF8.GetBytes(word));
             long result = 0;
             for (int i = 0; i < by.Length; i += 8)
             {
@@ -47,9 +47,9 @@ namespace Sercher
             }
             return result;
         }
-        public T FindCloseServerDBsByValue(string world)
+        public T FindCloseServerDBsByValue(string value)
         {
-            return hashTreeMap.Findbigger(GetHashByWorld(world)).Value;
+            return hashTreeMap.Findbigger(GetHashByWord(value)).Value;
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace Sercher
         /// <param name="serverDB">新的节点</param>
         /// <param name="MaxKeySelector">指定提取的排序字段</param>
         /// <param name="EmigrationSouceMap">待迁出数据。T是待迁出的节点，返回List为表名的集合</param>
-        /// <param name="ImmigrationAction">对待每个迁出数据做出的迁入行为。x是待迁出的每个表名</param>
+        /// <param name="ImmigrationAction">对迁出数据做出的迁入行为。x是待迁出的每个表名</param>
         /// <returns>迁移的表名集合</returns>
         public List<string> AddHashMap(T serverDB,
             Func<KeyValuePair<long, T>, long> MaxKeySelector,
@@ -78,7 +78,7 @@ namespace Sercher
             var loadMaxDB = hashTreeMap[loadMaxhash];
 
             var EmigrationSouceMapResult = EmigrationSouceMap(loadMaxDB)
-                 .Where(x => curNodeHash > GetHashByWorld(x)).ToList();
+                 .Where(x => curNodeHash > GetHashByWord(x)).ToList();
 
             ImmigrationAction(loadMaxDB, EmigrationSouceMapResult);
 

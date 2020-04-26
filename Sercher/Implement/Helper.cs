@@ -1,14 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
+using static Sercher.DomainAttributeEx;
+
 namespace Sercher
 {
-    static class Help
+    static class SqlHelp
     {
         /// <summary>
         /// 拼接sql批量插入语句，最大尺寸限制在1M ,1*1024*1024/102B=10240大概1w条数据
@@ -17,10 +23,10 @@ namespace Sercher
         /// <param name="tableName"></param>
         /// <param name="prams"></param>
         /// <returns></returns>
-       static public string insertMuanyQure<T>(string dbName, string tableName, T[] objList, string CreateFromTempletteTable = "")
+       static public string insertMuanySql<T>(string dbName, string tableName, T[] objList, string CreateFromTempletteTable = "")
         {//不知道一个方法中反射会不会自动缓存，最后测试
             var Pros = typeof(T).GetProperties();
-            var ProsNamelist = Pros.Select(x => x.Name).Where(x => x[0] != '_');//排除私有键属性名
+            var ProsNamelist = Pros.Where(x => IdentityAttribute.GetAttribute(x) == null).Select(x => x.Name);//排除自增属性
             string Sqlpramslist = "(" + string.Join(",", ProsNamelist) + ")";
             StringBuilder stringBuilder = new StringBuilder("INSERT INTO [" + dbName + "].[dbo].[" + tableName + "]" + Sqlpramslist + " VALUES ");
             foreach (var drow in objList)
@@ -28,7 +34,7 @@ namespace Sercher
                 stringBuilder.Append("(");
                 foreach (var dcol in Pros)
                 {
-                    if (dcol.Name[0] == '_') continue;//排除私有键属性值
+                    if (IdentityAttribute.GetAttribute(dcol) != null) continue;//排除自增属性
                     var value = dcol.GetValue(drow).ToString();
                     stringBuilder.Append("'" + value + "',");
                 }
@@ -89,7 +95,71 @@ namespace Sercher
             return list;
         }
 
+        static public string ConvertType2Sql(string typename)
+        {
+            typename = typename.ToLower();
+            switch (typename)
+            {
+                case "string":
+                    return "nchar";
+                case "int32":
+                    return "int";
+                case "int64":
+                    return "bigint";
+                case "long":
+                    return "bigint";
+                case "bool":
+                    return "bit";
+                case "double":
+                    return "float";
+                case "short":
+                    return "smallint";
+                case "byte":
+                    return "tinyint";
+                case "object":
+                    return "binary";
+                default:
+                    return typename;
+            }
+        }
+
+        static public string CreateTableSql<T>(string tableName)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append(string.Format("CREATE TABLE [dbo].[{0}](", tableName));
+            bool haskey = false;
+            foreach (var dcol in typeof(T).GetProperties())
+            {
+                var filedAttr = FiledInfoAttribute.GetAttribute(dcol);
+                string typename = filedAttr != null ? filedAttr.PropertyTypeName : "";
+                int len = filedAttr != null ? filedAttr.Len : -1;
+                string cannull = filedAttr != null ? filedAttr.CanNull ? "NULL" : "NOT NULL" : "NOT NULL";
+                if (string.IsNullOrWhiteSpace(typename))
+                    typename = SqlHelp.ConvertType2Sql(dcol.PropertyType.Name);
+                stringBuilder.Append(string.Format("[{0}] [{1}]", dcol.Name, typename));
+                if (len != -1)
+                    stringBuilder.Append(string.Format("({0})", len));
+                if (IdentityAttribute.GetAttribute(dcol) != null)
+                    stringBuilder.Append("IDENTITY(1,1)");
+                stringBuilder.Append(string.Format(" {0}", cannull));
+                stringBuilder.Append(",");
+                if (KeyAttribute.IsDefined(dcol, typeof(KeyAttribute)))
+                {
+                    stringBuilder.Append(string.Format(@"CONSTRAINT [PK_{0}] PRIMARY KEY CLUSTERED ([{1}] ASC),", tableName, dcol.Name));
+                    haskey = true;
+                }
+            }
+            if (!haskey) throw new InvalidOperationException("you need appoint PRIMARY use KeyAttribute " + typeof(T).Name + " above");
+
+            stringBuilder.Append(") ON [PRIMARY]");
+
+            return stringBuilder.ToString();
+        }
+
     }
+    /// <summary>
+    /// sql迁徙工具相关
+    /// </summary>
     public static class SqlConnectionExtension
     {
         /// <summary>
@@ -232,4 +302,64 @@ namespace Sercher
             public int ColOrder { get; set; }
         }
     }
+    /// <summary>
+    /// 序列化工具相关
+    /// </summary>
+    public static class SerializeHelper
+    {
+        /// <summary>
+        /// 把对象序列化并返回相应的字节
+        /// </summary>
+        /// <param name="pObj">需要序列化的对象</param>
+        /// <returns>byte[]</returns>
+        static public byte[] SerializeObject(object pObj)
+        {
+            if (pObj == null)
+                return null;
+            System.IO.MemoryStream _memory = new System.IO.MemoryStream();
+            BinaryFormatter formatter = new BinaryFormatter();
+            formatter.Serialize(_memory, pObj);
+            _memory.Position = 0;
+            byte[] read = new byte[_memory.Length];
+            _memory.Read(read, 0, read.Length);
+            _memory.Close();
+            return read;
+        }
+        /// <summary>
+        /// 把字节反序列化成相应的对象
+        /// </summary>
+        /// <param name="pBytes">字节流</param>
+                 /// <returns>object</returns>
+        static public object DeserializeObject(byte[] pBytes)
+        {
+            object _newOjb = null;
+            if (pBytes == null)
+                return _newOjb;
+            System.IO.MemoryStream _memory = new System.IO.MemoryStream(pBytes);
+            _memory.Position = 0;
+            BinaryFormatter formatter = new BinaryFormatter();
+            _newOjb = formatter.Deserialize(_memory);
+            _memory.Close();
+            return _newOjb;
+        }
+
+        static public void SerializerXml<T>(object obj, string path)
+        {
+            XmlSerializer xs = new XmlSerializer(typeof(T));
+            FileStream fs = File.Create(path);
+            xs.Serialize(fs, obj);
+            fs.Dispose();
+        }
+        static public T DeserializeXml<T>(string path)
+        {
+            XmlSerializer xs = new XmlSerializer(typeof(T));
+            FileStream fs = File.OpenRead(path);
+            T OBJ = (T)xs.Deserialize(fs);
+            fs.Dispose();
+            return OBJ;
+        }
+
+
+    }
+
 }

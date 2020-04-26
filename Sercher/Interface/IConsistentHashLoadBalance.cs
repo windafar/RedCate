@@ -9,7 +9,7 @@ namespace Sercher
 
         void AddHashMap(T serverDB, Func<KeyValuePair<long, T>, long> MaxKeySelector);
         List<string> AddHashMap(T serverDB, Func<KeyValuePair<long, T>, long> MaxKeySelector, Func<T, List<string>> EmigrationSouceMap, Action<T, List<string>> ImmigrationAction);
-        T FindCloseServerDBsByValue(string world);
+        T FindCloseServerDBsByValue(string word);
         IEnumerable<T> GetServerNodes();
         void RemoveHashMap(T serverDB, bool ReSetServerDBCount = true);
     }

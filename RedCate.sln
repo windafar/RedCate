@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PeripheralTool", "Periphera
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp1", "ConsoleApp1\ConsoleApp1.csproj", "{FE799BC1-2350-4DE4-BAEC-2FB78B91EF50}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Component", "Plug-interface\Component.csproj", "{201B9AB4-8C31-4FDE-A7F5-5F8C8A714541}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{FE799BC1-2350-4DE4-BAEC-2FB78B91EF50}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE799BC1-2350-4DE4-BAEC-2FB78B91EF50}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FE799BC1-2350-4DE4-BAEC-2FB78B91EF50}.Release|Any CPU.Build.0 = Release|Any CPU
+		{201B9AB4-8C31-4FDE-A7F5-5F8C8A714541}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{201B9AB4-8C31-4FDE-A7F5-5F8C8A714541}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{201B9AB4-8C31-4FDE-A7F5-5F8C8A714541}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{201B9AB4-8C31-4FDE-A7F5-5F8C8A714541}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

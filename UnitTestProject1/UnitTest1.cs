@@ -27,7 +27,7 @@ namespace UnitTestProject1
         [TestMethod]
         public void TesGethash()
         {
-            ConsistentHashLoadBalance consistentHash = new ConsistentHashLoadBalance();
+           // ConsistentHashLoadBalance consistentHash = new ConsistentHashLoadBalance();
            // consistentHash.GetHashByWorld("我都");
         }
 
@@ -38,18 +38,18 @@ namespace UnitTestProject1
         [TestMethod]
         public void testjiebaSegmenter()
         {
-            var text = Peripheral.BeforeEncodingClass.GetText(File.ReadAllBytes("Www.Chnxp.Com.Cn 黑魔导.txt"));
-           var u= PeripheralTool.Peripheral.Segmenter(text);
+          //  var text = Peripheral.BeforeEncodingClass.GetText(File.ReadAllBytes("Www.Chnxp.Com.Cn 黑魔导.txt"));
+        //   var u= PeripheralTool.Peripheral.Segmenter(text);
         }
         [TestMethod]
         public void TestIndex()
         {
-            foreach (var path in Directory.GetFiles(@"C:\Users\yjdcb\Desktop\新建文件夹", "*.txt", SearchOption.AllDirectories))
-                (new SercherIndexesDB { DbName = "mydb", Ip = "WIN-T9ASCBISP3P\\MYSQL" }).UploadDocument(new Document() { hasIndexed = (int)Document.HasIndexed.none, Name = new FileInfo(path).Name, Url = path });
-
+            //     foreach (var path in Directory.GetFiles(@"C:\Users\yjdcb\Desktop\新建文件夹", "*.txt", SearchOption.AllDirectories))
+            //         (new DocumentDB { DbName = "mydb", Ip = "WIN-T9ASCBISP3P\\MYSQL" }).UploadDocument(new Document() { hasIndexed = (int)Document.HasIndexed.none, Name = new FileInfo(path).Name, Url = path });
+            Config.Init();
             var se = new SercherServerBase();
             
-           // se.BuildSercherIndexToMongoDB();
+            se.BuildSercherIndexToSQLDB();
 
             
 
@@ -58,7 +58,13 @@ namespace UnitTestProject1
         [TestMethod]
         public void TestSearcher()
         {
-           new SercherServerBase().Searcher("三");
+        Config.Init();
+          var list= new SercherServerBase().Searcher("你说什么");
+        }
+        [TestMethod]
+        public void TestInit()
+        {
+           Config.Init();
         }
     
     }
