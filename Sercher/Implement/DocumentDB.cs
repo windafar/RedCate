@@ -17,21 +17,21 @@ namespace Sercher
             
         }
 
-
-        // static string this.DbName = "mydb";//文档库
-        // static string DoctableName = "documents";//文档表，目前只有一个表
-        // static string docdbIP = "WIN-T9ASCBISP3P\\MYSQL";
-
         /// <summary>
         /// 更新文档索引标记为已索引
         /// </summary>
         /// <param name="document"></param>
-        //public void UpdateDocumentStateToIndexed(this Document document, Document.HasIndexed hasIndexed)
-        //{
-        //    //var filter = Builders<Document>.Filter.Eq(x => x._id, document._id);
-        //    //var updated1 = Builders<Document>.Update.Set(x => x.hasIndexed, hasIndexed);
-        //    //var resultx = documentCollction.UpdateOne(filter, updated1);
-        //}
+        /// <remarks>2020年4月27日编写，未测试</remarks>
+        public void UpdateDocumentStateIndexStatus(int docId,Document.HasIndexed hasIndexed)
+        {
+            string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
+            SqlConnection coo = new SqlConnection(connectionStr);
+            coo.Open();
+            SqlCommand sqlCommand = new SqlCommand(string.Format("update {0} set hasIndexed={1} where _id={2}", DoctableName, (int)hasIndexed,docId), coo);
+            sqlCommand.ExecuteNonQuery();
+            coo.Close();
+
+        }
         public void UploadDocument(Document doc)
         {
             //var filter = Builders<Document>.Filter.Eq(x => x._id, doc._id);

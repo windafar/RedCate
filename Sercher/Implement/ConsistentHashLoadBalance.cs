@@ -13,7 +13,6 @@ namespace Sercher
     /// <summary>
     /// 基于hash映射的分布式的实现
     /// </summary>
-    /// <remarks>此类暂定和SercherDb类型绑在一起</remarks>
     public class ConsistentHashLoadBalance<T> : IConsistentHashLoadBalance<T>
     {
         public ConsistentHashLoadBalance(List<T> serverlists)

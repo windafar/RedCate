@@ -44,16 +44,11 @@ namespace UnitTestProject1
         [TestMethod]
         public void TestIndex()
         {
-            //     foreach (var path in Directory.GetFiles(@"C:\Users\yjdcb\Desktop\新建文件夹", "*.txt", SearchOption.AllDirectories))
-            //         (new DocumentDB { DbName = "mydb", Ip = "WIN-T9ASCBISP3P\\MYSQL" }).UploadDocument(new Document() { hasIndexed = (int)Document.HasIndexed.none, Name = new FileInfo(path).Name, Url = path });
+            foreach (var path in Directory.GetFiles(@"C:\Users\yjdcb\Desktop\新建文件夹", "*.txt", SearchOption.AllDirectories))
+                (new DocumentDB { DbName = "mydb", Ip = "WIN-T9ASCBISP3P\\MYSQL" }).UploadDocument(new Document() { hasIndexed = (int)Document.HasIndexed.none, Name = new FileInfo(path).Name, Url = path });
             Config.Init();
-            var se = new SercherServerBase();
-            
+            var se = new SercherServerBase();          
             se.BuildSercherIndexToSQLDB();
-
-            
-
-
         }
         [TestMethod]
         public void TestSearcher()

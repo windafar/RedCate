@@ -53,9 +53,7 @@ namespace Sercher
             var localwords = new HashSet<string>();
             DocumentToatalList.ForEach(x =>
              {
-
-
-                //x.UpdateDocumentStateToIndexed(Document.HasIndexed.Indexing);
+                documentDB.UpdateDocumentStateIndexStatus(x._id,Document.HasIndexed.Indexing);
                 System.Diagnostics.Stopwatch watch = new Stopwatch();
                  watch.Start();
                  var file = TextHelper.BeforeEncodingClass.GetText(File.ReadAllBytes(x.Url));
@@ -142,6 +140,11 @@ namespace Sercher
                 hashLoadBalance.FindCloseServerDBsByValue(g.First().Key)
                 .UploadDocumentIndex(g.Select(x => x.Value + ";").ToArray());
             }
+
+            DocumentToatalList.ForEach(x =>
+            {
+                documentDB.UpdateDocumentStateIndexStatus(x._id, Document.HasIndexed.Indexed);
+            });
 
             documentIndices_cachList.Clear();
 

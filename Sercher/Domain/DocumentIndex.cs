@@ -25,17 +25,22 @@ namespace Sercher
             BeginIndex = documentIndex.BeginIndex;
         }
 
+        /// <summary>
+        /// 索引文档的id
+        /// </summary>
         [Key]
         public int DocId { set; get; }
+        /// <summary>
+        /// 索引文档的的单词总数
+        /// </summary>
         public int DocumentWordTotal { set; get; }
         /// <summary>
-        /// 对应一个句子
+        /// 创建索引的时间
         /// </summary>
         public long IndexTime { set; get; }
 
-       // public string Word { set; get; }
         /// <summary>
-        /// 当前单词出现在文中的次数
+        /// 当前单词出现在此文中的次数
         /// </summary>
         public int WordFrequency { set; get; }
         /// <summary>
@@ -43,7 +48,9 @@ namespace Sercher
         /// </summary>
         [FiledInfo("text")]
         public string BeginIndex { set; get; }
-
+        /// <summary>
+        /// 创建索引时规定的权限，默认为文档的权限
+        /// </summary>
         public int Permission { set; get; }
 
     }
