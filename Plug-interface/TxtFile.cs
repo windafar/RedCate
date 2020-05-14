@@ -11,19 +11,19 @@ using Component.Default;
 
 namespace Component
 {
-    [ComponentPram(FileType:"docx,doc")]
-   public class DocxFile : TextComponent,IDisposable
+    [ComponentPram(FileType:"txt,html,xhtml")]
+   public class TxtFile : TextComponent,IDisposable
     {
-        WordprocessingDocument doc;
-
-        public DocxFile(FileStream inputFs) : base(inputFs)
+        public TxtFile(FileStream inputFs) : base(inputFs)
         {
-            doc = WordprocessingDocument.Open(inputFs, false);
         }
         protected override string ConvertInputToString()
         {
-            string text = doc.MainDocumentPart.Document.InnerText;
+            byte[] buff = new byte[inputFs.Length];
+            inputFs.Read(buff, 0, buff.Count());
+            string text = TextHelper.BeforeEncodingClass.GetText(buff);
             Dispose();//手动关闭文件
+
             return text;
         }
 
@@ -38,7 +38,6 @@ namespace Component
                 {
                     // TODO: 释放托管状态(托管对象)。
                     inputFs.Dispose();
-                    doc.Dispose();
                 }
 
                 // TODO: 释放未托管的资源(未托管的对象)并在以下内容中替代终结器。
@@ -63,6 +62,7 @@ namespace Component
             // TODO: 如果在以上内容中替代了终结器，则取消注释以下行。
             // GC.SuppressFinalize(this);
         }
+
 
         #endregion
     }

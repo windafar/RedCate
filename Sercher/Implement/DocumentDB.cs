@@ -78,7 +78,7 @@ namespace Sercher
             string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
             SqlConnection coo = new SqlConnection(connectionStr);
             coo.Open();
-            SqlDataAdapter adp = new SqlDataAdapter("SELECT count(1) FROM[" + this.DbName + "].[dbo].[" + DoctableName + "] where hasIndexed='0'", coo);
+            SqlDataAdapter adp = new SqlDataAdapter("SELECT count(1) FROM[" + this.DbName + "].[dbo].[" + DoctableName + "] where hasIndexed='"+(int)Document.HasIndexed.Indexed+"'", coo);
             DataSet ds = new DataSet();
             adp.Fill(ds);
             coo.Dispose();

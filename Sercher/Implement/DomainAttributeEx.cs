@@ -5,6 +5,9 @@ using System.Text;
 
 namespace Sercher
 {
+    /// <summary>
+    /// 此标记类主要用于生成表的配置
+    /// </summary>
     class DomainAttributeEx
     {
         /// <summary>

@@ -5,16 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="JiebaNet.Segmenter" Version="1.0.6" />
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
-    <PackageReference Include="mongocsharpdriver" Version="2.8.1" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="NGenerics" Version="1.5.3" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PeripheralTool\PeripheralTool.csproj" />
+    <ProjectReference Include="..\Plug-interface\Component.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -354,6 +354,7 @@ namespace Sercher
         {
             XmlSerializer xs = new XmlSerializer(typeof(T));
             FileStream fs = File.OpenRead(path);
+            fs.Seek(0, SeekOrigin.Begin);
             T OBJ = (T)xs.Deserialize(fs);
             fs.Dispose();
             return OBJ;

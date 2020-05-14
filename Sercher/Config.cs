@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Component;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -40,6 +41,7 @@ namespace Sercher
         /// default value is zero, range from int.min to int.max
         /// </summary>
         public int DefaultPermission { get => defaultPermission; set => defaultPermission = value; }
+
         public Config() { }
         /// <summary>
         /// 初始化配置，若存在配置文件则使用配置文件
@@ -82,7 +84,6 @@ namespace Sercher
             CurrentConfig.IndexesServerlists.Add(
                      new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseJ")
                     );
-            SaveConfig();
             //test
             //CurrentConfig.IndexesServerlists.ForEach(x => x.DeleDb());
 
@@ -155,15 +156,6 @@ namespace Sercher
         /// <summary>
         /// 初始化组价列表（搁置）
         /// </summary>
-        void InitComponentList()
-        {
-            var ComponentList = new List<KeyValuePair<string, string[]>>();
-            ComponentList.Add(new KeyValuePair<string, string[]>("docx", new string[] 
-            { "FileComponent.TextConvert", "TextComponent.TraditionalConvert" }));
-            ComponentList.Add(new KeyValuePair<string, string[]>("docx", new string[] 
-            { "FileComponent.ImageConvert" }));
-
-        }
 
     }
 }

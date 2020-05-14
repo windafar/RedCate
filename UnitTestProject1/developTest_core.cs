@@ -1,13 +1,13 @@
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PeripheralTool;
 using Sercher;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Linq;
 
-namespace UnitTestProject1
+namespace developTest_core
 {
     [TestClass]
     public class UnitTest1
@@ -44,17 +44,31 @@ namespace UnitTestProject1
         [TestMethod]
         public void TestIndex()
         {
-            foreach (var path in Directory.GetFiles(@"C:\Users\yjdcb\Desktop\新建文件夹", "*.txt", SearchOption.AllDirectories))
-                (new DocumentDB { DbName = "mydb", Ip = "WIN-T9ASCBISP3P\\MYSQL" }).UploadDocument(new Document() { hasIndexed = (int)Document.HasIndexed.none, Name = new FileInfo(path).Name, Url = path });
             Config.Init();
+            foreach (var path in Directory.GetFiles(@"C:\Users\yjdcb\Desktop\新建文件夹", "*.*", SearchOption.AllDirectories)
+                .Where(x => x.LastIndexOf(".txt") != -1
+                || x.LastIndexOf(".doc") != -1
+                || x.LastIndexOf(".xls") != -1
+                || x.LastIndexOf(".xhtml") != -1
+                ))
+                (new DocumentDB { DbName = "mydb", Ip = "WIN-T9ASCBISP3P\\MYSQL" }).UploadDocument(new Document() { hasIndexed = (int)Document.HasIndexed.none, Name = new FileInfo(path).Name, Url = path });
+
             var se = new SercherServerBase();          
             se.BuildSercherIndexToSQLDB();
         }
         [TestMethod]
+        public void TestPretreatment()
+        {
+            //SercherServerBase.Pretreatment(new Document { Name = "text", Url = @"C:\Users\yjdcb\Desktop\行测笔记.docx" });
+           var r= SercherServerBase.Pretreatment(new Document { Name = "text", Url = @"C:\Users\yjdcb\OneDrive\Documents\heart of woods.xlsx" });
+
+        }
+
+        [TestMethod]
         public void TestSearcher()
         {
         Config.Init();
-          var list= new SercherServerBase().Searcher("你说什么");
+          var list= new SercherServerBase().Searcher("头上");
         }
         [TestMethod]
         public void TestInit()

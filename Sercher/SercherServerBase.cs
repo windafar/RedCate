@@ -1,16 +1,15 @@
-﻿using MongoDB.Bson;
-using MongoDB.Driver;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using PeripheralTool;
 using System.Linq;
 using System.Threading.Tasks;
 //using MongoDB.Driver;//test
 using System.Diagnostics;
 using NGenerics.DataStructures.Trees;
 using System.Threading;
+using Component;
+using Component.Default;
 
 namespace Sercher
 {
@@ -45,80 +44,71 @@ namespace Sercher
             //hashLoadBalance.RemoveAllDBData();
             //hashLoadBalance = new ConsistentHashLoadBalance();
             long UpdateCount = 0;
-            //hashLoadBalance.SetServerDBCount();
+            SetServerDBCount();
             RedBlackTree<string, string> documentIndices_cachList = new RedBlackTree<string, string>();
             var DocumentToatalList = documentDB.GetNotIndexDocument();
             int remainder = DocumentToatalList.Count;
             var remotewords= SercherIndexesDB.GetWords(hashLoadBalance.GetServerNodes());
             var localwords = new HashSet<string>();
+            Dictionary<string, TextComponent> textComponent = new Dictionary<string, TextComponent>();//使用到的时候进行缓存
+
             DocumentToatalList.ForEach(x =>
-             {
-                documentDB.UpdateDocumentStateIndexStatus(x._id,Document.HasIndexed.Indexing);
+            {
+                documentDB.UpdateDocumentStateIndexStatus(x._id, Document.HasIndexed.Indexing);
                 System.Diagnostics.Stopwatch watch = new Stopwatch();
-                 watch.Start();
-                 var file = TextHelper.BeforeEncodingClass.GetText(File.ReadAllBytes(x.Url));
-                 var textSplit = Peripheral.Segmenter(file).Where(t =>
-                 {
-                     string word = t.Word;
-                     if ((word[0] < 0x4E00 || word[0] > 0x9FFF)//非中文
-                        && (word[0] < 0x41 || word[0] > 0x5a)//非大小字母
-                             && (word[0] < 0x61 || word[0] > 0x7a))//非小写字母
-                        return false;
-                     return true;
+                watch.Start();
+                IEnumerable<SegmenterToken> textSplit = Pretreatment(x);
+                Dictionary<string, DocumentIndex> documentIndices = new Dictionary<string, DocumentIndex>();
+                int wordTotal = textSplit.Count();
 
-                 });
-                 Dictionary<string, DocumentIndex> documentIndices = new Dictionary<string, DocumentIndex>();
-                 int wordTotal = textSplit.Count();
+                foreach (var token in textSplit)
+                {
+                    string word = token.Word.Trim().ToLower();
+                    if (!remotewords.Contains(word))
+                        if (!localwords.Contains(word))
+                            localwords.Add(word);
+                    //记录一个文档的所有相同词汇
+                    if (documentIndices.TryGetValue(word, out DocumentIndex documentIndex))
+                    {
+                        documentIndex.WordFrequency++;
+                        documentIndex.BeginIndex += ',' + token.StartIndex.ToString();
+                        documentIndex.DocumentWordTotal = wordTotal;
+                    }
+                    else
+                        documentIndices[word] = new DocumentIndex
+                        {
+                            IndexTime = DateTime.Now.Ticks,
+                            DocId = x._id,
+                            // RelevantContent= file.Substring((int)(Math.Max(token.StartIndex-Config.config.IndexContextLimt/2,0)),100),
+                            //Word = text,
+                            WordFrequency = 1,
+                            BeginIndex = token.StartIndex.ToString(),
+                            DocumentWordTotal = wordTotal,
+                            Permission = x.Permission == 0 ? Config.CurrentConfig.DefaultPermission : x.Permission
+                        };
+                }
 
-                 foreach (var token in textSplit)
-                 {
-                     string word = token.Word.Trim().ToLower();
-                     if (!remotewords.Contains(word))
-                         if (!localwords.Contains(word))
-                             localwords.Add(word);
-                     //记录一个文档的所有相同词汇
-                     if (documentIndices.TryGetValue(word, out DocumentIndex documentIndex))
-                     {
-                         documentIndex.WordFrequency++;
-                         documentIndex.BeginIndex += ',' + token.StartIndex.ToString();
-                         documentIndex.DocumentWordTotal = wordTotal;
-                     }
-                     else
-                         documentIndices[word] = new DocumentIndex
-                         {
-                             IndexTime = DateTime.Now.Ticks,
-                             DocId = x._id,
-                             // RelevantContent= file.Substring((int)(Math.Max(token.StartIndex-Config.config.IndexContextLimt/2,0)),100),
-                             //Word = text,
-                             WordFrequency = 1,
-                             BeginIndex = token.StartIndex.ToString(),
-                             DocumentWordTotal = wordTotal,
-                             Permission = x.Permission==0?Config.CurrentConfig.DefaultPermission: x.Permission
-                         };
-                 }
-
-                 //转换为脚本并加入全局缓存等待上传
-                 foreach (var kvp in documentIndices)
-                 {
-                  //UpdateIndex(kvp.Key, kvp.Value);
-                     if (documentIndices_cachList.ContainsKey(kvp.Key.ToString()))
-                     {
-                         documentIndices_cachList[kvp.Key] += "," + InsetValueIntoMemory(kvp.Key, new DocumentIndex[1] { kvp.Value },false);
-                     }
-                     else
-                     {
-                         documentIndices_cachList.Add(kvp.Key, InsetValueIntoMemory(kvp.Key, new DocumentIndex[1] { kvp.Value }, true));
-                     }
-                     UpdateCount++;
+                //转换为脚本并加入全局缓存等待上传
+                foreach (var kvp in documentIndices)
+                {
+                    //UpdateIndex(kvp.Key, kvp.Value);
+                    if (documentIndices_cachList.ContainsKey(kvp.Key.ToString()))
+                    {
+                        documentIndices_cachList[kvp.Key] += "," + InsetValueIntoMemory(kvp.Key, new DocumentIndex[1] { kvp.Value }, false);
+                    }
+                    else
+                    {
+                        documentIndices_cachList.Add(kvp.Key, InsetValueIntoMemory(kvp.Key, new DocumentIndex[1] { kvp.Value }, true));
+                    }
+                    UpdateCount++;
                     //Console.Write(kvp.Key);
                 }
 
 
-                 remainder--;
-                //均衡检查，放在文档的循环中，保证一篇文档的索引在一个数据库中
+                remainder--;
                 watch.Stop();
-                 Console.WriteLine("完成缓存文档：" + x.Name + ",速度（/s）：" + documentIndices.Count / watch.Elapsed.TotalSeconds);
-                 documentIndices.Clear();
+                Console.WriteLine("完成缓存文档：" + x.Name + ",速度（/s）：" + documentIndices.Count / watch.Elapsed.TotalSeconds);
+                documentIndices.Clear();
             });
 
             //对每一个同数据库的词汇的脚本进行组合,创建表
@@ -148,6 +138,30 @@ namespace Sercher
 
             documentIndices_cachList.Clear();
 
+        }
+        /// <summary>
+        /// 对输入文件进行预处理并分词
+        /// </summary>
+        /// <param name="x"></param>
+        /// <returns></returns>
+        public static IEnumerable<SegmenterToken> Pretreatment(Document x)
+        {
+            string filetype = x.Url.Substring(x.Url.LastIndexOf(".")).Remove(0,1);
+            var segmenterResult = TextComponent.GetInstance(
+                   filetype,
+                   new FileStream(x.Url, FileMode.Open)
+                    ).ToSegmenterResult();
+            IEnumerable<SegmenterToken> textSplit = segmenterResult.Where(t =>
+            {
+                string word = t.Word;
+                if ((word[0] < 0x4E00 || word[0] > 0x9FFF)//非中文
+                   && (word[0] < 0x41 || word[0] > 0x5a)//非大小字母
+                        && (word[0] < 0x61 || word[0] > 0x7a))//非小写字母
+                    return false;
+                return true;
+
+            });
+            return textSplit;
         }
 
         /// <summary>
@@ -182,7 +196,7 @@ namespace Sercher
         public RelationDocumentResult[] Searcher(string text)
         {
             //1.分词，排序搜索结果
-            var wordList = Peripheral.Segmenter(text).Select(x => x.Word).ToArray();
+            var wordList = TextComponent.SegmentFor(text);
             int docTotal = (int)documentDB.GetDocumentNum();
             List<RelationDocumentResult> relationDocumentResults = new List<RelationDocumentResult>();
 
