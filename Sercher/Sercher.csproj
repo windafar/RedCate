@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Plug-interface\Component.csproj" />
+    <ProjectReference Include="..\Component\Component.csproj" />
   </ItemGroup>
 
   <ItemGroup>
