@@ -10,7 +10,6 @@ using NGenerics.DataStructures.Trees;
 using System.Threading;
 using Component;
 using Component.Default;
-using static Sercher.DomainAttributeEx;
 
 namespace Sercher
 {
@@ -113,7 +112,7 @@ namespace Sercher
             });
 
             //对每一个同数据库的词汇的脚本进行组合,创建表
-            foreach (var g in localwords.GroupBy(w => hashLoadBalance.FindCloseServerDBsByTableName(w).DbName))
+            foreach (var g in localwords.GroupBy(w => hashLoadBalance.FindCloseServerDBsByValue(w).DbName))
             {
                 var wordgroup = g.ToArray();
                 hashLoadBalance.GetServerNodes().First(x=>x.DbName==g.Key)//!##GroupKey欠妥，不过数据库比较少的时候影响不大
@@ -125,10 +124,10 @@ namespace Sercher
             }
             localwords.Clear();
             //对每一个同数据库的词汇的脚本进行组合，上传
-            foreach (var g in documentIndices_cachList.AsQueryable().GroupBy(kv => hashLoadBalance.FindCloseServerDBsByTableName(kv.Key).DbName))
+            foreach (var g in documentIndices_cachList.AsQueryable().GroupBy(kv => hashLoadBalance.FindCloseServerDBsByValue(kv.Key).DbName))
             {
                 //上传此db的inser脚本
-                hashLoadBalance.FindCloseServerDBsByTableName(g.First().Key)
+                hashLoadBalance.FindCloseServerDBsByValue(g.First().Key)
                 .UploadDocumentIndex(g.Select(x => x.Value + ";").ToArray());
             }
 
@@ -171,9 +170,9 @@ namespace Sercher
         /// <param name="tableName"></param>
         protected string InsetValueIntoMemory<T>(string tableName, T[] objList,bool inserHead=true)
         {
-            string DbName = hashLoadBalance.FindCloseServerDBsByTableName(tableName).DbName;
+            string DbName = hashLoadBalance.FindCloseServerDBsByValue(tableName).DbName;
             var Pros = typeof(T).GetProperties();
-            var ProsNamelist = Pros.Where(x => IdentityAttribute.GetAttribute(x) == null).Select(x => x.Name); ;//排除私有键属性名
+            var ProsNamelist = Pros.Select(x => x.Name).Where(x => x[0] != '_');//排除私有键属性名
             string Sqlpramslist = "(" + string.Join(",", ProsNamelist) + ")";
             StringBuilder stringBuilder = new StringBuilder();
             if (inserHead)
@@ -183,7 +182,7 @@ namespace Sercher
                 stringBuilder.Append("(");
                 foreach (var dcol in Pros)
                 {
-                    if (IdentityAttribute.GetAttribute(dcol) != null) continue;//排除私有键属性值
+                    if (dcol.Name[0] == '_') continue;//排除私有键属性值
                     var value = dcol.GetValue(drow).ToString();
                     stringBuilder.Append("'" + value + "',");
                 }
@@ -203,7 +202,7 @@ namespace Sercher
 
             wordList.ToList().ForEach((word) =>
             {
-                var db = hashLoadBalance.FindCloseServerDBsByTableName(word);
+                var db = hashLoadBalance.FindCloseServerDBsByValue(word);
                 db.GetSercherResultFromIndexesDB(word, docTotal, (x, y) =>
                   {
                       lock (lockobj)
@@ -239,13 +238,13 @@ namespace Sercher
                 .ForEach(x => x.TableCount = x.GetSercherIndexCollectionCount());
         }
 
-        public void AddIndexesNode(ISercherIndexesDB newSercherIndexesDB)
+        public void AddIndexesNode(ISercherIndexesDB sercherIndexesDB)
         {
             SetServerDBCount();
-            hashLoadBalance.AddHashMap(newSercherIndexesDB,
+            hashLoadBalance.AddHashMap(sercherIndexesDB,
                     db => db.Value.TableCount,
                     maxdb => maxdb.GetSercherIndexCollectionNameList(),
-                    (maxdb, tableNamelist) => newSercherIndexesDB.ImmigrationOperation(maxdb, tableNamelist)); 
+                    (maxdb, tableNamelist) => sercherIndexesDB.ImmigrationOperation(maxdb, tableNamelist)); 
         }
     }
 

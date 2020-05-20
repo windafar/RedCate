@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Sercher
+﻿namespace Sercher
 {
     public interface IServerDB
     {
@@ -20,7 +18,7 @@ namespace Sercher
         /// 创建数据库
         /// </summary>
         /// <returns></returns>
-        bool CreateDB(string FileDir = null);
+        bool CreateDB();
         /// <summary>
         /// 删除数据库
         /// </summary>
@@ -30,22 +28,5 @@ namespace Sercher
         /// </summary>
         /// <returns></returns>
         bool GetdbStatus();
-        /// <summary>
-        /// 获取数据库文件本地位置
-        /// </summary>
-        /// <returns></returns>
-        Tuple<string, string> GetDbFilePath();
-        /// <summary>
-        /// 备份数据库到指定位置
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        bool BackupTo(string path);
-        /// <summary>
-        /// 恢复数据库到指定位置
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        bool RestoreFrom(string path);
     }
 }

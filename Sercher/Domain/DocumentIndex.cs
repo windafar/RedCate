@@ -9,7 +9,7 @@ namespace Sercher
     /// </summary>
     /// <remarks>一个单词对应一个文档，一次文档索引产生多个documentindex</remarks>
     [Serializable]
-    [TableInfo("IndexesTemplateTable")]//模板表表名
+    [TableInfo("IndexesTemplateTable")]
     public class DocumentIndex
     {
         public DocumentIndex()
