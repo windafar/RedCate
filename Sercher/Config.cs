@@ -22,6 +22,8 @@ namespace Sercher
         private string documentsDBIp = "WIN-T9ASCBISP3P\\MYSQL";
         List<SercherIndexesDB> indexesServerlists;
         private int defaultPermission = 0;
+        private string defaultDbDirPath=@"E:";
+
         /// <summary>
         /// 文档数据库名
         /// </summary>
@@ -41,6 +43,7 @@ namespace Sercher
         /// default value is zero, range from int.min to int.max
         /// </summary>
         public int DefaultPermission { get => defaultPermission; set => defaultPermission = value; }
+        public string DefaultDbDirPath { get => defaultDbDirPath; set => defaultDbDirPath = value; }
 
         public Config() { }
         /// <summary>
@@ -153,9 +156,6 @@ namespace Sercher
             DocumentDB serverDB = new DocumentDB(DocumentsDBIp, DocumentsDBName);
             serverDB.CreateDocumentTable();
         }
-        /// <summary>
-        /// 初始化组价列表（搁置）
-        /// </summary>
 
     }
 }

@@ -6,7 +6,6 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
 using DocumentFormat.OpenXml.Packaging;
 using System.Linq;
-using JiebaNet.Segmenter;
 using Component.Default;
 
 namespace Component
