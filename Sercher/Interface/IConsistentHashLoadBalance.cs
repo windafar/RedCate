@@ -24,13 +24,13 @@ namespace Sercher
         /// <param name="EmigrationSouceMap">待迁出数据。T是待迁出的节点，返回List为表名的集合</param>
         /// <param name="ImmigrationAction">对迁出数据做出的迁入行为。x是待迁出的每个表名</param>
         /// <returns>迁移的表名集合</returns>
-        List<string> AddHashMap(T serverDB, Func<KeyValuePair<long, T>, long> MaxKeySelector, Func<T, List<string>> EmigrationSouceMap, Action<T, List<string>> ImmigrationAction);
+        Tuple<long,T> AddHashMap(T serverDB, Func<KeyValuePair<long, T>, long> MaxKeySelector, Func<T, List<string>> EmigrationSouceMap, Action<T, List<string>> ImmigrationAction);
         /// <summary>
         /// 根据值寻找最近的hash节点
         /// </summary>
         /// <param name="value">值</param>
         /// <returns></returns>
-        T FindCloseServerDBsByValue(string value);
+        T FindCloseServerDBsByTableName(string value);
         /// <summary>
         /// 获取hash环上的所有节点
         /// </summary>

@@ -11,13 +11,55 @@ using Component.Default;
 
 namespace Component
 {
-   public class PptxFile : TextComponent, IDisposable
+    [ComponentPram(FileType: "pptx,ppt")]
+    public class PptxFile : TextComponent, IDisposable
     {
         public PptxFile(Stream inputFs) : base(inputFs)
         {
+            
+        }
+        protected override string ConvertInputToString()
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+
+            using (var presentationDocument = DocumentFormat.OpenXml.Packaging.PresentationDocument.Open("测试.pptx", false))
+            {
+                var presentationPart = presentationDocument.PresentationPart;
+                var presentation = presentationPart.Presentation;
+
+                // 先获取页面
+                var slideIdList = presentation.SlideIdList;
+
+
+                foreach (var slideId in slideIdList.ChildElements.OfType<SlideId>())
+                {
+                    // 获取页面内容
+                    SlidePart slidePart = (SlidePart)presentationPart.GetPartById(slideId.RelationshipId);
+
+                    var slide = slidePart.Slide;
+
+                    foreach (var paragraph in
+                        slidePart.Slide
+                            .Descendants<DocumentFormat.OpenXml.Drawing.Paragraph>())
+                    {
+                        // 获取段落
+                        // 在 PPT 文本是放在形状里面
+                        foreach (var text in
+                            paragraph.Descendants<DocumentFormat.OpenXml.Drawing.Text>())
+                        {
+                            // 获取段落文本，这样不会添加文本格式
+                            stringBuilder.AppendLine(text.Text);
+                        }
+                    }
+                }
+            }
+
+            Dispose();
+            return stringBuilder.ToString();
 
         }
 
+        #region 备用
         public static void GetSlideTitles(string presentationFile, string store)
         {
             // Open the presentation as read-only.
@@ -191,8 +233,7 @@ namespace Component
             }
         }
 
-
-        public override IEnumerable<SegmenterToken> ToSegmenterResult()
+        public IEnumerable<SegmenterToken> ToResult()
         {
             string pptlistPath = "【马赛克】";
             System.IO.StreamReader pptlist = new System.IO.StreamReader(pptlistPath);
@@ -214,10 +255,10 @@ namespace Component
 
             return new List<SegmenterToken>();
         }
+        #endregion
 
         #region IDisposable Support
         private bool disposedValue = false; // 要检测冗余调用
-
 
         protected virtual void Dispose(bool disposing)
         {
@@ -225,6 +266,7 @@ namespace Component
             {
                 if (disposing)
                 {
+                    this.inputFs.Dispose();
                     // TODO: 释放托管状态(托管对象)。
                 }
 

@@ -7,6 +7,8 @@ using System.Data.SqlClient;
 using System.IO;
 using static Sercher.DomainAttributeEx;
 using System.ComponentModel.DataAnnotations;
+using System;
+using System.Diagnostics;
 
 namespace Sercher
 {
@@ -51,31 +53,48 @@ namespace Sercher
             //coo.Open();
             SqlDataAdapter adp = new SqlDataAdapter(selectSQL, coo);
             DataSet ds = new DataSet();
-            adp.Fill(ds);
+            try
+            {
+                adp.Fill(ds);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+                return false;
+            }
             int value = ds.Tables[0].Rows.Count;
             ds.Dispose();
             adp.Dispose();
             coo.Dispose();
             return value != 0;
         }
-        public bool CreateDB()
+        public bool CreateDB(string FileDir=null)
         {
             string connectionStr = GetSqldbConnectionStr(this.Ip, "master");
+            string dbDirPath = Config.CurrentConfig.DefaultDbDirPath;
             string createSql = string.Format(@"
                         CREATE DATABASE {0} 
                         ON
                         (
                             NAME = {0},
-                            FILENAME = 'E:\{0}_database.mdf',
+                            FILENAME = '{1}\{0}_database.mdf',
                             SIZE = 5MB,
                             FILEGROWTH = 100
-                        )", this.DbName);
+                        )", this.DbName,dbDirPath);
             var coo = new SqlConnection(connectionStr);
             coo.Open();
             SqlCommand sqlCommand = new SqlCommand(createSql, coo);
-            int status = sqlCommand.ExecuteNonQuery();
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+                return false;
+            }
             coo.Dispose();
-            return status == -1;
+            return true;
         }
         public void DeleDb()
         {
@@ -83,8 +102,84 @@ namespace Sercher
             SqlConnection coo = new SqlConnection(connectionStr);
             coo.Open();
             SqlCommand sqlCommand = new SqlCommand("drop database " + this.DbName, coo);
-            sqlCommand.ExecuteNonQuery();
-            coo.Close();
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+            }
+                coo.Dispose();
+        }
+
+        public Tuple<string, string> GetDbFilePath()
+        {
+            string sql = string.Format(@"select filename from {0}.dbo.sysfiles", this.DbName);
+            string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
+            SqlConnection coo = new SqlConnection(connectionStr);
+            SqlDataAdapter adp = new SqlDataAdapter(sql, coo);
+            DataSet ds = new DataSet();
+            try
+            {
+                adp.Fill(ds);
+                return new Tuple<string, string>(ds.Tables[0].Rows[0].ItemArray[0] as string,
+                   ds.Tables[0].Rows[1].ItemArray[0] as string);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+                coo.Dispose();
+                return null;
+            }
+
+        }
+        public bool BackupTo(string path)
+        {
+            string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
+            SqlConnection coo = new SqlConnection(connectionStr);
+            string sql = string.Format(@"Backup database {0} to disk = '{1}'", DbName, path);
+            coo.Open();
+            SqlCommand sqlCommand = new SqlCommand(sql.ToString(), coo); ;
+            sqlCommand.CommandTimeout = 600;
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+                coo.Dispose();
+                throw e;
+                // return false;
+            }
+            coo.Dispose();
+
+
+            return true;
+        }
+        public bool RestoreFrom(string path)
+        {
+            string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
+            SqlConnection coo = new SqlConnection(connectionStr);
+            string sql = string.Format(@"use master;restore database {0} from disk = '{1}' with REPLACE", DbName, path);
+            coo.Open();
+            SqlCommand sqlCommand = new SqlCommand(sql.ToString(), coo); ;
+            sqlCommand.CommandTimeout = 600;
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+                coo.Dispose();
+                throw e;
+            }
+            coo.Dispose();
+
+
+            return true;
         }
 
     }

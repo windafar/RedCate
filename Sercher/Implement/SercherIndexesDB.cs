@@ -7,6 +7,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using static Sercher.DomainAttributeEx;
+using System.IO;
 
 namespace Sercher
 {
@@ -79,6 +80,44 @@ namespace Sercher
             }
             coo.Dispose();
         }
+
+        /// <summary>
+        /// 使用selectinto复制若干表
+        /// </summary>
+        /// <param name="names"></param>
+        public void CreateIndexTable(string[] names,string SourceDbName)
+        {
+            string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
+            SqlConnection coo = new SqlConnection(connectionStr);
+            StringBuilder createBudiler = new StringBuilder();
+            coo.Open();
+            int i = 0, j = 0;
+            foreach (var name in names)
+            {//为selectinto语句分段执行
+                i++;
+                createBudiler.Append(string.Format(@"select * into {0}.dbo.[{1}] from {2}.dbo.{1};
+                    ", this.DbName, name, SourceDbName));//从模板创建表
+
+                if (i == 5000 || j * 5000 + i == names.Count())
+                {
+                    j++; i = 0;
+                    SqlCommand sqlCommand = new SqlCommand(createBudiler.ToString(), coo);
+                    sqlCommand.CommandTimeout = 120;
+
+                    try
+                    {
+                        sqlCommand.ExecuteNonQuery();
+                    }
+                    catch (Exception e)
+                    {
+
+                    }
+                    createBudiler.Clear();
+                }
+            }
+            coo.Dispose();
+        }
+
 
         public SqlConnection GetSercherIndexDb()
         {
@@ -243,23 +282,48 @@ namespace Sercher
             coo.Dispose();
         }
 
+
         /// <summary>
         /// 迁移数据表
         /// </summary>
         /// <param name="maxdb">最大负载的目标DB</param>
         /// <param name="tableNamelist">需要迁移的表</param>
         /// <returns></returns>
+        /// <remarks>
+        ///过程如下：
+        /// 在服务器上创建临时数据库
+        ///执行select into脚本到临时数据库
+        ///拷贝数据库文件到目标数据库
+        ///附加到sql服务
+        ///注意点：
+        ///创建临时数据库操作需要额外的空间
+        ///select into脚本可能会因过多而爆内存异常，需分段执行
+        ///附加到sql服务的时候可能会有权限问题
+        /// </remarks>
         public object ImmigrationOperation(ISercherIndexesDB maxdb, List<string> tableName)
         {
-            //在服务器上创建临时数据库
-            //执行select into脚本到临时数据库
-            //拷贝数据库文件到目标数据库
-            //附加到sql服务
-            //注意点：
-            //创建临时数据库操作需要额外的空间
-            //select into脚本可能会因过多而爆内存异常，需分段执行
-            //附加到sql服务的时候可能会有权限问题
-            throw new NotImplementedException();
+            //连接到待迁移数据库并导出到临时数据库
+            SercherIndexesDB sercherIndexesDB = new SercherIndexesDB(maxdb.Ip, "ImmigrationDB");
+            sercherIndexesDB.CreateDB();
+            sercherIndexesDB.CreateIndexTable(tableName.ToArray(), maxdb.DbName);
+            //拷贝出数据库
+            //此处可以使用备份还原的方式进行热转移，也可以自行拷贝ImmigrationDB数据库并手动附加
+            //DataBaseControl dataBaseControl = new DataBaseControl()
+            //{
+            //    ConnectionString = sercherIndexesDB.GetSqldbConnectionStr(),
+            //    DataBaseName = sercherIndexesDB.DbName,
+            //    DataBase_MDF = filepath[0],
+            //    DataBase_LDF = filepath[1],
+            //};
+            //dataBaseControl.detachDB();
+            //
+            //##:备份还原的代码如下
+            var filepath = GetDbFilePath().Item1;//获取当前数据库文件（目标数据库）的位置
+            var NetPath = NetTools.GetShareName(filepath).Item1;//获取目标数据库网络位置
+            sercherIndexesDB.BackupTo(NetPath);//从网络路径备份数据库
+            RestoreFrom(filepath);//还原此数据库
+            //##
+            return tableName;
         }
 
 
