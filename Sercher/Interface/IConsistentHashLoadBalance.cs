@@ -36,6 +36,7 @@ namespace Sercher
         /// </summary>
         /// <returns></returns>
         IEnumerable<T> GetServerNodes();
+        IEnumerable<KeyValuePair<long,T>> GetHashNodes();
         /// <summary>
         /// 移除hash节点
         /// </summary>

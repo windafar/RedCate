@@ -1,0 +1,40 @@
+﻿<Window x:Class="Client.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Client"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="53*"/>
+            <ColumnDefinition Width="347*"/>
+        </Grid.ColumnDefinitions>
+        <TreeView>
+            <TreeViewItem Header="文档">
+                <TreeViewItem Name="DocDataTreeItem">
+                    <TreeViewItem.Header>
+                        <TextBlock MouseDown="DocDataTreeItem_MouseDown">文档数据</TextBlock>
+                    </TreeViewItem.Header>
+                </TreeViewItem>
+            </TreeViewItem>
+            <TreeViewItem Header="索引">
+                <TreeViewItem Name="IndexDataTreeItem">
+                    <TreeViewItem.Header>
+                        <TextBlock MouseDown="IndexDataTreeItem_MouseDown">索引数据</TextBlock>
+                    </TreeViewItem.Header>
+                </TreeViewItem>
+                <TreeViewItem Header="索引配置"></TreeViewItem>
+            </TreeViewItem>
+            <TreeViewItem Header="搜索">
+                <TreeViewItem Header="搜索测试"></TreeViewItem>
+            </TreeViewItem>
+            <TreeViewItem Header="其他配置">
+            </TreeViewItem>
+
+        </TreeView>
+        <Frame Content="Frame" Name="NavFrame" Grid.Column="1"/>
+
+    </Grid>
+</Window>

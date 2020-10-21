@@ -15,7 +15,7 @@ namespace Sercher
     {
         int wordCount;
         bool isOkey;//迁移时要是删除重复映射的时候词太多太占内存可以用这个字段和带过滤的findbigger方法实时更新可用映射
-        public int TableCount { get => wordCount; set => wordCount = value; }
+        public int IndexesTableCount { get => wordCount; set => wordCount = value; }
         public string SercherIndexesTableTemplate { get; set; }
 
         public static HashSet<string> GetWords(IEnumerable<ISercherIndexesDB> sercherIndexesDBs)
@@ -95,7 +95,7 @@ namespace Sercher
             foreach (var name in names)
             {//为selectinto语句分段执行
                 i++;
-                createBudiler.Append(string.Format(@"select * into {0}.dbo.[{1}] from {2}.dbo.{1};
+                createBudiler.Append(string.Format(@"select * into [{0}].dbo.[{1}] from [{2}].dbo.[{1}];
                     ", this.DbName, name, SourceDbName));//从模板创建表
 
                 if (i == 5000 || j * 5000 + i == names.Count())
@@ -154,16 +154,16 @@ namespace Sercher
             return (int)ds.Tables[0].Rows[0].ItemArray[0];
         }
         public List<string> GetSercherIndexCollectionNameList()
-        {
+        {//这方法好像有问题
             string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
             SqlConnection coo = new SqlConnection(connectionStr);
-            SqlDataAdapter adp = new SqlDataAdapter("SELECT count(1) from sysobjects where xtype = 'u'", coo);
+            SqlDataAdapter adp = new SqlDataAdapter("SELECT name from sysobjects where xtype = 'u'", coo);
             DataSet ds = new DataSet();
             adp.Fill(ds);
             List<string> list = new List<string>();
-            foreach (var item in ds.Tables[0].Columns)
+            foreach (var item in ds.Tables[0].Rows)
             {
-                list.Add(item.ToString());
+                list.Add(((System.Data.DataRow)item).ItemArray[0].ToString());
             }
             return list;
         }
@@ -318,10 +318,12 @@ namespace Sercher
             //dataBaseControl.detachDB();
             //
             //##:备份还原的代码如下
-            var filepath = GetDbFilePath().Item1;//获取当前数据库文件（目标数据库）的位置
+            this.CreateDB();
+
+            var filepath = this.GetDbFilePath().Item1;//获取当前数据库文件（目标数据库）的位置
             var NetPath = NetTools.GetShareName(filepath).Item1;//获取目标数据库网络位置
             sercherIndexesDB.BackupTo(NetPath);//从网络路径备份数据库
-            RestoreFrom(filepath);//还原此数据库
+            this.RestoreFrom(filepath);//还原此数据库
             //##
             return tableName;
         }

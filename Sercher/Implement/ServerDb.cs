@@ -9,6 +9,8 @@ using static Sercher.DomainAttributeEx;
 using System.ComponentModel.DataAnnotations;
 using System;
 using System.Diagnostics;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Sercher
 {
@@ -17,9 +19,15 @@ namespace Sercher
         string dbName;
         int status;
         string ip;
+        private string physicaTableSuffix="#)#";
+        int eachTableMaxItemNum = 10000000;
+        Dictionary<string, List<string>> EachTableDic = new Dictionary<string, List<string>>();
         public string Ip { get => ip; set => ip = value; }
         public string DbName { get => dbName; set => dbName = value; }
         public int Status { get => status; set => status = value; }
+        public string PhysicaTableSuffix { get => physicaTableSuffix; set => physicaTableSuffix = value; }
+        public int EachTableMaxItemNum { get => eachTableMaxItemNum; set => eachTableMaxItemNum = value; }
+
         protected string GetSqldbConnectionStr()
         {
             //"Server=joe;Database=AdventureWorks;User ID=sa;Password=test;pooling=true;connection lifetime=0;min pool size = 1;max pool size=40000"
@@ -38,7 +46,7 @@ namespace Sercher
         }
 
         public ServerDB() { }
-        public ServerDB(string ip,string dbName)
+        public ServerDB(string ip, string dbName)
         {
             this.Ip = ip;
             this.DbName = dbName;
@@ -68,7 +76,7 @@ namespace Sercher
             coo.Dispose();
             return value != 0;
         }
-        public bool CreateDB(string FileDir=null)
+        public bool CreateDB(string FileDir = null)
         {
             string connectionStr = GetSqldbConnectionStr(this.Ip, "master");
             string dbDirPath = Config.CurrentConfig.DefaultDbDirPath;
@@ -80,7 +88,7 @@ namespace Sercher
                             FILENAME = '{1}\{0}_database.mdf',
                             SIZE = 5MB,
                             FILEGROWTH = 100
-                        )", this.DbName,dbDirPath);
+                        )", this.DbName, dbDirPath);
             var coo = new SqlConnection(connectionStr);
             coo.Open();
             SqlCommand sqlCommand = new SqlCommand(createSql, coo);
@@ -110,7 +118,7 @@ namespace Sercher
             {
                 Debug.WriteLine(e.Message);
             }
-                coo.Dispose();
+            coo.Dispose();
         }
 
         public Tuple<string, string> GetDbFilePath()
@@ -182,5 +190,25 @@ namespace Sercher
             return true;
         }
 
+        public IDictionary<string, List<string>> GetTableGroup()
+        {
+
+            //string connectionStr = GetSqldbConnectionStr(Ip, DbName);
+            //SqlConnection coo = new SqlConnection(connectionStr);
+            //SqlDataAdapter adp = new SqlDataAdapter("select name from sysobjects where xtype = 'u'", coo);
+            //DataSet ds = new DataSet();
+            //adp.Fill(ds);
+            //for (int i = 0; i < ds.Tables[0].Rows.Count; i++)
+            //{
+            //    string value = (string)ds.Tables[0].Rows[i].ItemArray[0];
+            //    string key = value.Substring(0, value.IndexOf(PhysicaTableSuffix));
+            //    if (dic.ContainsKey(key))
+            //        dic[key].Add(value);
+            //    else dic[key] = new List<string>() { value };
+            //}
+            //coo.Dispose();
+            //return dic;
+            throw new NotImplementedException();
+        }
     }
 }

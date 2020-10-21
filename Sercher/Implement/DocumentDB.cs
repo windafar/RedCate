@@ -59,6 +59,19 @@ namespace Sercher
             coo.Close();
             return SqlHelp.DataSetToList<Document>(ds);
         }
+        public List<Document> GetDocuments()
+        {
+            //    documentCollction.UpdateOne(filter, updated1,new UpdateOptions() { IsUpsert=true});
+            string connectionStr = GetSqldbConnectionStr(Ip, this.DbName);
+            SqlConnection coo = new SqlConnection(connectionStr);
+            coo.Open();
+            SqlDataAdapter adp = new SqlDataAdapter("SELECT * FROM[" + this.DbName + "].[dbo].[" + DoctableName + "]", coo);
+            DataSet ds = new DataSet();
+            adp.Fill(ds);
+            coo.Close();
+            return SqlHelp.DataSetToList<Document>(ds);
+        }
+
         public Document GetDocumentById(int docid)
         {
             string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);

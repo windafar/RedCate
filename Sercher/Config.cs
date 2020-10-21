@@ -1,6 +1,7 @@
 ﻿using Component;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -23,6 +24,7 @@ namespace Sercher
         List<SercherIndexesDB> indexesServerlists;
         private int defaultPermission = 0;
         private string defaultDbDirPath=@"E:";
+        int maxIndexCachWordNum = 10000000;
 
         /// <summary>
         /// 文档数据库名
@@ -44,17 +46,20 @@ namespace Sercher
         /// </summary>
         public int DefaultPermission { get => defaultPermission; set => defaultPermission = value; }
         public string DefaultDbDirPath { get => defaultDbDirPath; set => defaultDbDirPath = value; }
+        /// <summary>
+        /// 索引所用的最大缓存
+        /// </summary>
+        public int MaxIndexCachWordNum { get => maxIndexCachWordNum; set => maxIndexCachWordNum = value; }
 
         public Config() { }
         /// <summary>
         /// 初始化配置，若存在配置文件则使用配置文件
         /// </summary>
-        /// <param name="reload"></param>
+        /// <param name="reinit"></param>
         /// <returns></returns>
-        static public Config Init(bool reload = false)
+        static public Config Init(bool reinit = false)
         {
-            if (!reload && CurrentConfig != null) return CurrentConfig;
-            if (Config.LoadConfig()) return CurrentConfig;
+            if (!reinit && (CurrentConfig != null|| Config.LoadConfig())) return CurrentConfig;
             CurrentConfig = new Config();
             CurrentConfig.IndexesServerlists = new List<SercherIndexesDB>();
             CurrentConfig.IndexesServerlists.Add(
@@ -100,8 +105,15 @@ namespace Sercher
                     x.CreateIndexTemplateTable();
                 }
             });
-            CurrentConfig.CreateDocumentDB();
-            CurrentConfig.CreateDocumentTable();
+            try
+            {
+                CurrentConfig.CreateDocumentDB();
+                CurrentConfig.CreateDocumentTable();
+            }
+            catch (SqlException ex) 
+            {
+                Debug.WriteLine("sql异常：" + ex.Message);
+            }
             SaveConfig();
             return CurrentConfig;
         }

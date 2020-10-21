@@ -7,9 +7,9 @@ namespace Sercher
     public interface ISercherIndexesDB : IServerDB
     {
         /// <summary>
-        /// 表总计数目
+        /// 索引表总计数目
         /// </summary>
-        int TableCount { get; set; }
+        int IndexesTableCount { get; set; }
         /// <summary>
         /// 创建索引表
         /// </summary>

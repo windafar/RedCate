@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Sercher
 {
@@ -16,6 +18,17 @@ namespace Sercher
         /// 数据库状态
         /// </summary>
         int Status { get; set; }
+        /// <summary>
+        /// 获取表及其切分的子表
+        /// </summary>
+        /// <returns></returns>
+        IDictionary<string, List<string>> GetTableGroup();
+        /// <summary>
+                                                                         /// 用于写入和读取子表的标注
+                                                                         /// </summary>
+        string PhysicaTableSuffix { get; set; }
+
+
         /// <summary>
         /// 创建数据库
         /// </summary>

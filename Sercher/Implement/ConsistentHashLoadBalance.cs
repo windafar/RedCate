@@ -28,6 +28,10 @@ namespace Sercher
         {
             return this.hashTreeMap.Select(x => x.Value);
         }
+        public IEnumerable<KeyValuePair<long, T>> GetHashNodes()
+        {
+            return this.hashTreeMap.Select(x => x);
+        }
 
         /// <summary>
         /// 根据表名获取hash映射
@@ -71,7 +75,7 @@ namespace Sercher
             long loadMaxhash = hashTreeMap
                  .OrderByDescending(x => MaxKeySelector).First().Key;
             long loadMinhash = hashTreeMap.FindSimler(loadMaxhash).Key;
-            long curNodeHash = (loadMaxhash - loadMinhash) / 2;
+            long curNodeHash = (loadMaxhash + loadMinhash) / 2;
 
             //数据迁移[因涉及非常多的稀疏表，于是采用select into后分离数据库的方式]
             var loadMaxDB = hashTreeMap[loadMaxhash];
@@ -82,7 +86,7 @@ namespace Sercher
             ImmigrationAction(loadMaxDB, EmigrationSouceMapResult);
 
             //加入
-            hashTreeMap[curNodeHash] = serverDB;
+            hashTreeMap.Add(curNodeHash,serverDB);
 
             //删除重映射集合
             //waitDelList.ForEach(collection => loadMaxDB.DelCollectionAsync(collection));
@@ -102,6 +106,7 @@ namespace Sercher
         {
             throw new NotImplementedException();
         }
+
 
     }
 
@@ -174,10 +179,15 @@ namespace Sercher
             while (node != null)
             {
                 if (node.Data.Key < key) temp = node.Data;
-                if (node.Data.Key < key) node = node.Left;
-                else node = node.Right;
+                if (node.Data.Key < key) node = node.Right;
+                else node = node.Left;
             }
-            if (temp.Value == null) throw new KeyNotFoundException();
+            if (temp.Value == null)
+            {
+                var kvnode = FindSimler(HashSpace);
+                if (kvnode.Value == null) throw new KeyNotFoundException();
+                else temp = kvnode;
+            }
             return temp;
         }
         /// <summary>

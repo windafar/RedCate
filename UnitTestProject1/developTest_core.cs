@@ -44,7 +44,7 @@ namespace developTest_core
         [TestMethod]
         public void TestIndex()
         {
-            Config.Init();
+            Config.Init(false);
             foreach (var path in Directory.GetFiles(@"C:\Users\yjdcb\Desktop\新建文件夹", "*.*", SearchOption.AllDirectories)
                 .Where(x => x.LastIndexOf(".txt") != -1
                 || x.LastIndexOf(".doc") != -1
@@ -69,6 +69,7 @@ namespace developTest_core
         {
         Config.Init();
           var list= new SercherServerBase().Searcher("头上");
+            
         }
         [TestMethod]
         public void TestInit()
