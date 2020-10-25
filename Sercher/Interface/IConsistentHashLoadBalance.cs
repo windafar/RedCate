@@ -42,6 +42,6 @@ namespace Sercher
         /// </summary>
         /// <param name="serverDB"></param>
         /// <param name="ReSetServerDBCount">是否重新计算服务节点数目</param>
-        void RemoveHashMap(T serverDB, bool ReSetServerDBCount = true);
+        void RemoveHashMap(T serverDB);
     }
 }

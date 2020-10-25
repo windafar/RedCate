@@ -13,6 +13,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Sercher;
 using System.Windows.Controls.Primitives;
+using DocumentFormat.OpenXml.Drawing.Charts;
 
 namespace Client.indexes
 {
@@ -30,7 +31,7 @@ namespace Client.indexes
             var total = MainWindow.sercherServerBase
                 .GetHashNodes().Count();
             ChartView.ItemsSource = MainWindow.sercherServerBase
-                 .GetHashNodes().ToList()
+                 .GetHashNodes().AsParallel()
                  .Select((x => new
                  {
                      value = x.Value.GetSercherIndexCollectionCount(),
@@ -38,22 +39,23 @@ namespace Client.indexes
                      ip=x.Value.Ip,
                      hash = x.Key,
                      db=x.Value
-                 }))
+                 })).ToList()
                  .OrderBy(x => x.hash);
             
         }
 
         private void ChartView_Click(object sender, RoutedEventArgs e)
         {
-            dynamic item;
-            if (e.OriginalSource as ButtonBase != null)
+            if (e.OriginalSource as Button != null)
             {
-                //item = ((ButtonBase)e.OriginalSource).DataContext;
-                //ISercherIndexesDB db = item.db as ISercherIndexesDB;
-                //long hash= (long)item.hash;
-                MainWindow.sercherServerBase.AddIndexesNode(new SercherIndexesDB(
-                    "WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseZZ"));
+                Button b = e.OriginalSource as Button;
+                if (b.Name == "RemoveButton") 
+                {
+                    dynamic item = b.DataContext;
+                    MainWindow.sercherServerBase.RemoveIndexServiceNodes(item.db);
+                }
             }
         }
+
     }
 }

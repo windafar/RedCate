@@ -38,6 +38,8 @@ namespace Sercher
         }
 
         static Dictionary<string, SqlConnection> SqlConnectionCollection = new Dictionary<string, SqlConnection>();
+        private object getindexdbobj = new object();
+
         public SercherIndexesDB() { }
 
         public SercherIndexesDB(string ip, string dbName) : base(ip, dbName)
@@ -61,11 +63,11 @@ namespace Sercher
                 createBudiler.Append(string.Format(@"select * into {0}.dbo.[{1}] from {2};
                     ", this.DbName, name, SercherIndexesTableTemplate));//从模板创建表
 
-                if (i == 5000 || j * 5000 + i == names.Count())
+                if (i == 500 || j * 500 + i == names.Count())
                 {
                     j++; i = 0;
                     SqlCommand sqlCommand = new SqlCommand(createBudiler.ToString(), coo);
-                    sqlCommand.CommandTimeout = 120;
+                    sqlCommand.CommandTimeout = 600;
 
                     try
                     {
@@ -73,7 +75,7 @@ namespace Sercher
                     }
                     catch (Exception e)
                     {
-
+                        Debug.WriteLine(e.Message);
                     }
                     createBudiler.Clear();
                 }
@@ -102,15 +104,15 @@ namespace Sercher
                 {
                     j++; i = 0;
                     SqlCommand sqlCommand = new SqlCommand(createBudiler.ToString(), coo);
-                    sqlCommand.CommandTimeout = 120;
+                    sqlCommand.CommandTimeout = 600;
 
                     try
                     {
                         sqlCommand.ExecuteNonQuery();
                     }
-                    catch (Exception e)
+                    catch (SqlException e) 
                     {
-
+                        Debug.Print(e.Message);
                     }
                     createBudiler.Clear();
                 }
@@ -120,7 +122,7 @@ namespace Sercher
 
 
         public SqlConnection GetSercherIndexDb()
-        {
+        {//多线程下出错
             SqlConnection sqlConnection;
             if (SqlConnectionCollection.TryGetValue(this.Ip + this.DbName, out var value))
             {
@@ -178,15 +180,17 @@ namespace Sercher
             {
                 sqlCommand.ExecuteNonQuery();
             }
-            catch (Exception e)
-            {//若不存在此表
-
-            }
+            catch (SqlException e) { Debug.Print(e.Message); }
         }
 
         public void UploadDocumentIndex(string[] sqls)
         {
-            var coo = GetSercherIndexDb();
+            SqlConnection coo;
+            lock (getindexdbobj)
+            {
+                coo = GetSercherIndexDb();
+            }
+
             int i = 0;
             int j = 0;
             StringBuilder stringBuilder = new StringBuilder();
@@ -198,7 +202,7 @@ namespace Sercher
                 {
                     SqlTransaction transaction = coo.BeginTransaction();
                     SqlCommand sqlCommand = new SqlCommand(stringBuilder.ToString(), coo);
-                    sqlCommand.CommandTimeout = 120;
+                    sqlCommand.CommandTimeout = 600;
                     sqlCommand.Transaction = transaction;
                     try
                     {
@@ -212,6 +216,8 @@ namespace Sercher
                             //若已经存在此表 
                         }
                         transaction.Rollback();
+                        Debug.WriteLine(e.Message);
+
                     }
                     stringBuilder.Clear();
                 }
@@ -245,11 +251,11 @@ namespace Sercher
         /// <param name="pagesize">页面大小</param>
         /// <param name="pagenum">页数</param>
         /// <param name="permission">权限值，大于该值的才会返回，默认为最大值10</param>
-        public void GetSercherResultFromIndexesDB(string word, int doctotal, Action<int, double> resultAction, int pagesize = 10, int pagenum = 1,int permission = 0)
+        public void GetSercherResultFromIndexesDB(string word, int doctotal, Action<int, double, IList<int>> resultAction, int pagesize = 10, int pagenum = 1,int permission = 0)
         {
             string func = string.Format(@"DECLARE @ide float
                     select @ide= LOG({0}.0*10/COUNT(1)) from {4}.dbo.[{1}]
-                    SELECT TOP {2} DocId, WordFrequency*1./DocumentWordTotal*@ide as tfide
+                    SELECT TOP {2} DocId, WordFrequency*1./DocumentWordTotal*@ide as tfide,BeginIndex
                     FROM(
                      SELECT ROW_NUMBER() OVER (ORDER BY WordFrequency*1./DocumentWordTotal*@ide desc) AS RowNumber,* 
                      FROM {4}.dbo.[{1}] 
@@ -277,7 +283,10 @@ namespace Sercher
             {
                 int docid = (int)ds.Tables[0].Rows[r].ItemArray[0];
                 double tf_ide = (double)ds.Tables[0].Rows[r].ItemArray[1];
-                resultAction(docid, tf_ide);
+                IList<int> beginindex = ((string)ds.Tables[0].Rows[r].ItemArray[2])
+                    .Split(new char[1] { ',' },StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x=>int.Parse(x)).ToList();
+                resultAction(docid, tf_ide, beginindex);
             }
             coo.Dispose();
         }
@@ -302,29 +311,45 @@ namespace Sercher
         /// </remarks>
         public object ImmigrationOperation(ISercherIndexesDB maxdb, List<string> tableName)
         {
-            //连接到待迁移数据库并导出到临时数据库
-            SercherIndexesDB sercherIndexesDB = new SercherIndexesDB(maxdb.Ip, "ImmigrationDB");
+            ////连接到待迁移数据库并导出到临时数据库
+            //SercherIndexesDB sercherIndexesDB = new SercherIndexesDB(maxdb.Ip, "ImmigrationDB");
+            //sercherIndexesDB.CreateDB();
+            //sercherIndexesDB.CreateIndexTable(tableName.ToArray(), maxdb.DbName);
+            //try
+            //{
+            //    sercherIndexesDB.CreateIndexTemplateTable();
+            //}
+            //catch (SqlException){ }
+            ////1 拷贝出数据库
+            ////此处可以使用备份还原的方式进行热转移，也可以自行拷贝ImmigrationDB数据库并手动附加
+            ////DataBaseControl dataBaseControl = new DataBaseControl()
+            ////{
+            ////    ConnectionString = sercherIndexesDB.GetSqldbConnectionStr(),
+            ////    DataBaseName = sercherIndexesDB.DbName,
+            ////    DataBase_MDF = filepath[0],
+            ////    DataBase_LDF = filepath[1],
+            ////};
+            ////dataBaseControl.detachDB();
+            ////
+            ////##:2 备份还原的代码如下
+            //this.CreateDB();
+
+            //var filepath = this.GetDbFilePath().Item1;//获取当前数据库文件（目标数据库）的位置
+            //var NetPath = NetTools.GetShareName(filepath).Item1;//获取目标数据库网络位置
+            //sercherIndexesDB.BackupTo(NetPath);//从网络路径备份数据库
+            //this.RestoreFrom(filepath);//还原此数据库
+            ////##
+            ///
+            //#下面我直接在本地数据库拷贝
+            SercherIndexesDB sercherIndexesDB = new SercherIndexesDB(maxdb.Ip, this.DbName);
             sercherIndexesDB.CreateDB();
             sercherIndexesDB.CreateIndexTable(tableName.ToArray(), maxdb.DbName);
-            //拷贝出数据库
-            //此处可以使用备份还原的方式进行热转移，也可以自行拷贝ImmigrationDB数据库并手动附加
-            //DataBaseControl dataBaseControl = new DataBaseControl()
-            //{
-            //    ConnectionString = sercherIndexesDB.GetSqldbConnectionStr(),
-            //    DataBaseName = sercherIndexesDB.DbName,
-            //    DataBase_MDF = filepath[0],
-            //    DataBase_LDF = filepath[1],
-            //};
-            //dataBaseControl.detachDB();
-            //
-            //##:备份还原的代码如下
-            this.CreateDB();
+            try
+            {
+                sercherIndexesDB.CreateIndexTemplateTable();
+            }
+            catch (SqlException) { }
 
-            var filepath = this.GetDbFilePath().Item1;//获取当前数据库文件（目标数据库）的位置
-            var NetPath = NetTools.GetShareName(filepath).Item1;//获取目标数据库网络位置
-            sercherIndexesDB.BackupTo(NetPath);//从网络路径备份数据库
-            this.RestoreFrom(filepath);//还原此数据库
-            //##
             return tableName;
         }
 
@@ -336,7 +361,11 @@ namespace Sercher
             var coo = new SqlConnection(connectionStr);
             coo.Open();
             SqlCommand sqlCommand = new SqlCommand(sql.ToString(), coo);
-            int status = sqlCommand.ExecuteNonQuery();
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+            }
+            catch (SqlException e) { Debug.Print(e.Message); }
             coo.Dispose();
         }
 

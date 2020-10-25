@@ -14,12 +14,14 @@ namespace Sercher
         /// 获取文档总数
         /// </summary>
         /// <returns></returns>
-        int GetDocumentNum();
+        int GetIndexedDocumentNum();
         /// <summary>
         /// 获取未被索引的文档
         /// </summary>
         /// <returns></returns>
         List<Document> GetNotIndexDocument();
+        void UpdateDocumentStateIndexStatus(int docId, string hasIndexed);
+
         /// <summary>
         ///  更新文档
         /// </summary>

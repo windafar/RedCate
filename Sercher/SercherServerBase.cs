@@ -11,6 +11,7 @@ using System.Threading;
 using Component;
 using Component.Default;
 using static Sercher.DomainAttributeEx;
+using NGenerics.Extensions;
 
 namespace Sercher
 {
@@ -18,12 +19,14 @@ namespace Sercher
     {
         public int documentId { set; get; }
         public double dependency { set; get; }
+        public IList<int> beginIndex { set; get; }
         public Document doc { set; get; }
     }
 
     public class SercherServerBase
     {
-        object lockobj = new object();
+        object searcherlockobj = new object();
+        object lockobj1 = new object();
 
         static protected IConsistentHashLoadBalance<ISercherIndexesDB> hashLoadBalance;
 
@@ -40,11 +43,10 @@ namespace Sercher
 
         }
 
-        public void BuildSercherIndexToSQLDB()
+        public void BuildSercherIndexToSQLDB(Action<double,string> IndexesProgress=null)
         {
             //hashLoadBalance.RemoveAllDBData();
             //hashLoadBalance = new ConsistentHashLoadBalance();
-            long UpdateCount = 0;
             SetServerDBCount();
             RedBlackTree<string, string> documentIndices_cachList = new RedBlackTree<string, string>();
             var DocumentToatalList = documentDB.GetNotIndexDocument();
@@ -53,10 +55,10 @@ namespace Sercher
             var localwords = new HashSet<string>();
             Dictionary<string, TextComponent> textComponent = new Dictionary<string, TextComponent>();//使用到的时候进行缓存
             int curWordCachNum = 0;
-            for(int i=0,j=0;i< DocumentToatalList.Count;i++)
+            for (int i = 0, j = 0; i < DocumentToatalList.Count; i++)
             {
                 var doc = DocumentToatalList[i];
-                documentDB.UpdateDocumentStateIndexStatus(doc._id, Document.HasIndexed.Indexing);
+                documentDB.UpdateDocumentStateIndexStatus(doc._id, "pro_"+Config.CurrentConfig.IndexesServiceName);
                 System.Diagnostics.Stopwatch watch = new Stopwatch();
                 watch.Start();
                 IEnumerable<SegmenterToken> textSplit = Pretreatment(doc);
@@ -81,8 +83,6 @@ namespace Sercher
                         {
                             IndexTime = DateTime.Now.Ticks,
                             DocId = doc._id,
-                            // RelevantContent= file.Substring((int)(Math.Max(token.StartIndex-Config.config.IndexContextLimt/2,0)),100),
-                            //Word = text,
                             WordFrequency = 1,
                             BeginIndex = token.StartIndex.ToString(),
                             DocumentWordTotal = wordTotal,
@@ -91,59 +91,65 @@ namespace Sercher
                 }
 
                 //转换为脚本并加入全局缓存等待上传
-                foreach (var kvp in documentIndices)
+                documentIndices.AsParallel().ForAll(kvp =>
                 {
                     //UpdateIndex(kvp.Key, kvp.Value);
                     if (documentIndices_cachList.ContainsKey(kvp.Key.ToString()))
                     {
-                        documentIndices_cachList[kvp.Key] += "," + InsetValueIntoMemory(kvp.Key, new DocumentIndex[1] { kvp.Value }, false);
+                        string sql = InsetValueIntoMemory(kvp.Key, new DocumentIndex[1] { kvp.Value }, false);
+                        lock (lockobj1)//因为此循环内Key唯一，所以只锁了添加代码
+                        {
+                            documentIndices_cachList[kvp.Key] += "," + sql;
+                        }
                     }
                     else
                     {
-                        documentIndices_cachList.Add(kvp.Key, InsetValueIntoMemory(kvp.Key, new DocumentIndex[1] { kvp.Value }, true));
+                        string sql = InsetValueIntoMemory(kvp.Key, new DocumentIndex[1] { kvp.Value }, true);
+                        lock (lockobj1)
+                        {
+                            documentIndices_cachList.Add(kvp.Key, sql);
+                        }
                     }
-                    UpdateCount++;
-                    //Console.Write(kvp.Key);
-                }
+                });
 
 
                 remainder--;
                 watch.Stop();
-                Console.WriteLine("完成缓存文档：" + doc.Name + ",速度（/s）：" + documentIndices.Count / watch.Elapsed.TotalSeconds);
+                IndexesProgress?.Invoke(i / DocumentToatalList.Count, "文档："+ doc.Name+" 缓存完成");
                 curWordCachNum += documentIndices.Count;
                 documentIndices.Clear();
-
-                if (Config.CurrentConfig.MaxIndexCachWordNum < curWordCachNum)
+                if (Config.CurrentConfig.MaxIndexCachWordNum < curWordCachNum|| i == DocumentToatalList.Count)
                 {
+                    IndexesProgress?.Invoke(i / DocumentToatalList.Count, "以达缓存上限，开始创建表");
                     //对每一个同数据库的词汇的脚本进行组合,创建表
-                    foreach (var g in localwords.GroupBy(w => hashLoadBalance.FindCloseServerDBsByTableName(w).DbName))
-                    {
-                        var wordgroup = g.ToArray();
-                        hashLoadBalance.GetServerNodes().First(n => n.DbName == g.Key)//!##GroupKey欠妥，不过数据库比较少的时候影响不大
-                        .CreateIndexTable(wordgroup);
-                        //foreach (var w in wordgroup)
-                        //{
-                        //    localwords.Remove(w);
-                        //}
-                    }
+                    var group1 = localwords.GroupBy(w => hashLoadBalance.FindCloseServerDBsByTableName(w).DbName).ToArray();
+                    Parallel.ForEach(group1, g =>
+                     {
+                         var wordgroup = g.ToArray();
+                         hashLoadBalance.GetServerNodes().First(n => n.DbName == g.Key)//!##GroupKey欠妥，不过数据库比较少的时候影响不大
+                         .CreateIndexTable(wordgroup);
+                         IndexesProgress?.Invoke(i / DocumentToatalList.Count, g.Key+ ":一组表创建完成");
+                     });
                     localwords.Clear();
+                    IndexesProgress?.Invoke(i / DocumentToatalList.Count, "开始上传索引");
                     //对每一个同数据库的词汇的脚本进行组合，上传
-                    foreach (var g in documentIndices_cachList.AsQueryable().GroupBy(kv => hashLoadBalance.FindCloseServerDBsByTableName(kv.Key).DbName))
-                    {
-                        //上传此db的inser脚本
-                        hashLoadBalance.FindCloseServerDBsByTableName(g.First().Key)
-                        .UploadDocumentIndex(g.Select(s => s.Value + ";").ToArray());
-                    }
+                    var group2 = documentIndices_cachList.AsQueryable().GroupBy(kv => hashLoadBalance.FindCloseServerDBsByTableName(kv.Key).DbName).ToArray();
+                    Parallel.ForEach(group2, g =>
+                     {
+                         //上传此db的inser脚本
+                         hashLoadBalance.FindCloseServerDBsByTableName(g.First().Key)
+                          .UploadDocumentIndex(g.Select(s => s.Value + ";").ToArray());
+                         IndexesProgress?.Invoke(i / DocumentToatalList.Count, g.Key + ":一组索引创建完成");
+                     });
 
                     documentIndices_cachList.Clear();
                     while(j<=i)
                     {            
-                        documentDB.UpdateDocumentStateIndexStatus(DocumentToatalList[j]._id, Document.HasIndexed.Indexed);
+                        documentDB.UpdateDocumentStateIndexStatus(DocumentToatalList[j]._id,"yes");
                         j++;
                     }
-
                     curWordCachNum = 0;
-
+                    IndexesProgress?.Invoke(i / DocumentToatalList.Count,"一批上传完成，刷新缓存");
                 }
 
             }
@@ -210,17 +216,17 @@ namespace Sercher
         {
             //1.分词，排序搜索结果
             var wordList = TextComponent.SegmentFor(text);
-            int docTotal = (int)documentDB.GetDocumentNum();
+            int docTotal = (int)documentDB.GetIndexedDocumentNum();
             List<RelationDocumentResult> relationDocumentResults = new List<RelationDocumentResult>();
 
-            wordList.ToList().ForEach((word) =>
+            wordList.AsParallel().ForAll((word) =>
             {
                 var db = hashLoadBalance.FindCloseServerDBsByTableName(word);
-                db.GetSercherResultFromIndexesDB(word, docTotal, (x, y) =>
+                db.GetSercherResultFromIndexesDB(word, docTotal, (x, y, i) =>
                   {
-                      lock (lockobj)
+                      lock (searcherlockobj)
                       {
-                          relationDocumentResults.Add(new RelationDocumentResult { dependency = y, documentId = x });
+                          relationDocumentResults.Add(new RelationDocumentResult { dependency = y, documentId = x, beginIndex = i });
                       }
                   });
             });
@@ -232,6 +238,7 @@ namespace Sercher
                  {
                      dependency = doc.Sum(r => r.dependency),//计算单个文档的相关性总和
                      documentId = doc.First().documentId,
+                     beginIndex= doc.Select(x=>x.beginIndex).Aggregate((a,b)=> { a.AddRange(b);return a; }),
                      doc = documentDB.GetDocumentById(doc.First().documentId)
                  }).OrderByDescending(docresult => docresult.dependency)//最后根据相关性总和排序
                  .ToArray();
@@ -257,12 +264,19 @@ namespace Sercher
             hashLoadBalance.AddHashMap(newSercherIndexesDB,
                     db => db.Value.IndexesTableCount,
                     maxdb => maxdb.GetSercherIndexCollectionNameList(),
-                    (maxdb, tableNamelist) => newSercherIndexesDB.ImmigrationOperation(maxdb, tableNamelist)); 
+                    (maxdb, tableNamelist) => newSercherIndexesDB.ImmigrationOperation(maxdb, tableNamelist));
+            Config.CurrentConfig.AddIndexesServerlists(newSercherIndexesDB);
+            Config.SaveConfig();
         }
 
         public IEnumerable<KeyValuePair<long, ISercherIndexesDB>> GetHashNodes()
         {
             return hashLoadBalance.GetHashNodes();
+        }
+        public void RemoveIndexServiceNodes(SercherIndexesDB sercherIndexesDB)
+        {
+            hashLoadBalance.RemoveHashMap(sercherIndexesDB);
+            sercherIndexesDB.IndexesTableCount = sercherIndexesDB.GetSercherIndexCollectionCount();
         }
     }
 

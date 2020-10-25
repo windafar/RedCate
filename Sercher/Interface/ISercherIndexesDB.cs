@@ -48,7 +48,7 @@ namespace Sercher
         /// <param name="pagesize">页面大小</param>
         /// <param name="pagenum">页数</param>
         /// <param name="permission">权限值，大于该值的才会返回，默认为最大值10</param>
-        void GetSercherResultFromIndexesDB(string word, int doctotal, Action<int, double> resultAction, int pagesize = 10, int pagenum = 1, int permission = Int32.MaxValue);
+        void GetSercherResultFromIndexesDB(string word, int doctotal, Action<int, double, IList<int>> resultAction, int pagesize = 10, int pagenum = 1, int permission = Int32.MaxValue);
         /// <summary>
         /// 上传多个文档索引
         /// </summary>

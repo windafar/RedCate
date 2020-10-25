@@ -25,10 +25,10 @@
                         <TextBlock MouseDown="IndexDataTreeItem_MouseDown">索引数据</TextBlock>
                     </TreeViewItem.Header>
                 </TreeViewItem>
-                <TreeViewItem Header="索引配置"></TreeViewItem>
+                <TreeViewItem Header="索引配置" x:Name="IndexesConfig" MouseDown="IndexesConfig_MouseDown"></TreeViewItem>
             </TreeViewItem>
             <TreeViewItem Header="搜索">
-                <TreeViewItem Header="搜索测试"></TreeViewItem>
+                <TreeViewItem Header="搜索测试" MouseDown="SerchTestTreeItem_MouseDown"></TreeViewItem>
             </TreeViewItem>
             <TreeViewItem Header="其他配置">
             </TreeViewItem>

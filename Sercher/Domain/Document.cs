@@ -23,12 +23,10 @@ namespace Sercher
         [Identity]
         public int _id { set; get; }
         /// <summary>
-        /// 标记文档是否已经被索引
+        /// yes,no,pro{IndexServiceName}
         /// </summary>
-        public enum HasIndexed { none, Indexed, Indexing }
-
-        [EnumDataType(typeof(HasIndexed))]//这EnumDataType估计有问题
-        public int hasIndexed { set; get; }
+        [FiledInfo("nchar", false, 1024)]
+        public string hasIndexed { set; get; }
         /// <summary>
         /// 文档权限，默认为0，范围在int.Min~int.Max
         /// </summary>

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Data;
 using System.Data.SqlClient;
 using static Sercher.DomainAttributeEx;
+using System.Diagnostics;
 
 namespace Sercher
 {
@@ -22,13 +23,17 @@ namespace Sercher
         /// </summary>
         /// <param name="document"></param>
         /// <remarks>2020年4月27日编写，未测试</remarks>
-        public void UpdateDocumentStateIndexStatus(int docId,Document.HasIndexed hasIndexed)
+        public void UpdateDocumentStateIndexStatus(int docId,string hasIndexed)
         {
             string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
             SqlConnection coo = new SqlConnection(connectionStr);
             coo.Open();
-            SqlCommand sqlCommand = new SqlCommand(string.Format("update {0} set hasIndexed={1} where _id={2}", DoctableName, (int)hasIndexed,docId), coo);
-            sqlCommand.ExecuteNonQuery();
+            SqlCommand sqlCommand = new SqlCommand(string.Format("update {0} set hasIndexed='{1}' where _id={2}", DoctableName, hasIndexed,docId), coo);
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+            }
+            catch (SqlException e) { Debug.Print(e.Message); }
             coo.Close();
 
         }
@@ -44,7 +49,11 @@ namespace Sercher
             SqlConnection coo = new SqlConnection(connectionStr);
             coo.Open();
             SqlCommand sqlCommand = new SqlCommand(SqlHelp.insertMuanySql(this.DbName, DoctableName, new Document[1] { doc }), coo);
-            sqlCommand.ExecuteNonQuery();
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+            }
+            catch (SqlException e) { Debug.Print(e.Message); }
             coo.Close();
         }
         public List<Document> GetNotIndexDocument()
@@ -53,7 +62,7 @@ namespace Sercher
             string connectionStr = GetSqldbConnectionStr(Ip, this.DbName);
             SqlConnection coo = new SqlConnection(connectionStr);
             coo.Open();
-            SqlDataAdapter adp = new SqlDataAdapter("SELECT * FROM[" + this.DbName + "].[dbo].[" + DoctableName + "] where hasIndexed='0'", coo);
+            SqlDataAdapter adp = new SqlDataAdapter("SELECT * FROM[" + this.DbName + "].[dbo].[" + DoctableName + "] where hasIndexed='no'", coo);
             DataSet ds = new DataSet();
             adp.Fill(ds);
             coo.Close();
@@ -85,13 +94,13 @@ namespace Sercher
 
             //return documentCollction.Find(x => x._id == docid).First();
         }
-        public int GetDocumentNum()
+        public int GetIndexedDocumentNum()
         {//这儿的where之后改一下
 
             string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
             SqlConnection coo = new SqlConnection(connectionStr);
             coo.Open();
-            SqlDataAdapter adp = new SqlDataAdapter("SELECT count(1) FROM[" + this.DbName + "].[dbo].[" + DoctableName + "] where hasIndexed='"+(int)Document.HasIndexed.Indexed+"'", coo);
+            SqlDataAdapter adp = new SqlDataAdapter("SELECT count(1) FROM[" + this.DbName + "].[dbo].[" + DoctableName + "] where hasIndexed='yes'", coo);
             DataSet ds = new DataSet();
             adp.Fill(ds);
             coo.Dispose();
@@ -105,7 +114,11 @@ namespace Sercher
             var coo = new SqlConnection(connectionStr);
             coo.Open();
             SqlCommand sqlCommand = new SqlCommand(sql.ToString(), coo);
-            int status = sqlCommand.ExecuteNonQuery();
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+            }
+            catch (SqlException e) { Debug.Print(e.Message); }
             coo.Dispose();
         }
 

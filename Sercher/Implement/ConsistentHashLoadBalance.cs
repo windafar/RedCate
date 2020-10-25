@@ -102,9 +102,10 @@ namespace Sercher
             hashTreeMap[curNodeHash] = serverDB;
         }
 
-        public void RemoveHashMap(T serverDB, bool ReSetServerDBCount = true)
+        public void RemoveHashMap(T serverDB)
         {
-            throw new NotImplementedException();
+            var node = hashTreeMap.First(s => s.Value.Equals(serverDB));
+            hashTreeMap.Remove(node.Key);
         }
 
 

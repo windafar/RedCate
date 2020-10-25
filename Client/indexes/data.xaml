@@ -9,7 +9,7 @@
       Title="data">
 
     <Grid>
-        <ListView Name="ChartView" Loaded="Chart_Loaded" ButtonBase.Click="ChartView_Click">
+        <ListView Name="ChartView" Loaded="Chart_Loaded" ButtonBase.Click="ChartView_Click" Grid.Row="1">
             <ListView.View>
                 <GridView>
                     <GridView.Columns>
@@ -21,8 +21,7 @@
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
-                                        <Button>Add</Button>
-                                        <Button>Remove</Button>
+                                        <Button Name="RemoveButton">Remove</Button>
                                     </StackPanel>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>

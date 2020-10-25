@@ -40,6 +40,15 @@ namespace Client
         {
             NavFrame.Navigate(new Uri("./document/data.xaml", UriKind.Relative));
         }
+        private void SerchTestTreeItem_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            NavFrame.Navigate(new Uri("./serchtest/sercher.xaml", UriKind.Relative));
+        }
 
+        private void IndexesConfig_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            NavFrame.Navigate(new Uri("./indexes/config.xaml", UriKind.Relative), sercherServerBase);
+
+        }
     }
 }

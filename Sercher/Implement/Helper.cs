@@ -26,7 +26,7 @@ namespace Sercher
         /// <param name="prams"></param>
         /// <returns></returns>
        static public string insertMuanySql<T>(string dbName, string tableName, T[] objList, string CreateFromTempletteTable = "")
-        {//不知道一个方法中反射会不会自动缓存，最后测试
+        {
             var Pros = typeof(T).GetProperties();
             var ProsNamelist = Pros.Where(x => IdentityAttribute.GetAttribute(x) == null).Select(x => x.Name);//排除自增属性
             string Sqlpramslist = "(" + string.Join(",", ProsNamelist) + ")";
