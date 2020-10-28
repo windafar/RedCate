@@ -5,15 +5,21 @@ It's includ ranking function base on TF-IDE
 
 This applies to enterprise search.
 
-currently only support text file index and search
+defaultly, it use 'Jieba' in word segmentation.
 
 to be continue
 
-»ùÓÚÒ»ÖÂĞÔ¹şÏ£ÊµÏÖ·Ö²¼´æ´¢(Ê¹ÓÃsqlserver)£¬°üº¬ÁËtfideÅÅĞò¡£
+åŸºäºä¸€è‡´æ€§å“ˆå¸Œå®ç°åˆ†å¸ƒå­˜å‚¨(ä½¿ç”¨sqlserver)ï¼ŒåŒ…å«äº†tfideæ’åºã€‚
 
-ÊÊÓÃÓÚÆóÒµ¼¶µÄËÑË÷¡£
+é€‚ç”¨äºä¼ä¸šçº§çš„æœç´¢ã€‚
 
-ÍâÎ§µÄ×é¼şÃ»ÓĞĞ´£¬Ä¿Ç°½öÖ§³ÖtxtÎÄ±¾µÄË÷ÒıºÍËÑË÷
+é»˜è®¤ä½¿ç”¨â€˜ç»“å·´â€™åˆ†è¯ã€‚
+
+#### æ–‡æœ¬ç´¢å¼•ç»„ä»¶æ”¯æŒçš„æ–‡ä»¶åˆ—è¡¨(text file types list that can be indexed)
+1. txt, html, xhtml
+2. doc, docx
+3. xls, xlsx
+   
 
 
 
