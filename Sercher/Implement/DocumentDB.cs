@@ -4,6 +4,8 @@ using System.Linq;
 using System.Data;
 using System.Data.SqlClient;
 using static Sercher.DomainAttributeEx;
+using System.Diagnostics;
+using System;
 
 namespace Sercher
 {
@@ -22,13 +24,17 @@ namespace Sercher
         /// </summary>
         /// <param name="document"></param>
         /// <remarks>2020年4月27日编写，未测试</remarks>
-        public void UpdateDocumentStateIndexStatus(int docId,Document.HasIndexed hasIndexed)
+        public void UpdateDocumentStateIndexStatus(int docId,string hasIndexed)
         {
-            string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
+            string connectionStr = GetSqldbConnectionStr();
             SqlConnection coo = new SqlConnection(connectionStr);
             coo.Open();
-            SqlCommand sqlCommand = new SqlCommand(string.Format("update {0} set hasIndexed={1} where _id={2}", DoctableName, (int)hasIndexed,docId), coo);
-            sqlCommand.ExecuteNonQuery();
+            SqlCommand sqlCommand = new SqlCommand(string.Format("update {0} set hasIndexed='{1}' where _id={2}", DoctableName, hasIndexed,docId), coo);
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+            }
+            catch (SqlException e) { GlobalMsg.globalMsgHand.Invoke(e.Message); }
             coo.Close();
 
         }
@@ -40,28 +46,60 @@ namespace Sercher
             //    .Set(x => x.Name, doc.Name)
             //    .Set(x => x.Url, doc.Url);
             //    documentCollction.UpdateOne(filter, updated1,new UpdateOptions() { IsUpsert=true});
-            string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
+            string connectionStr = GetSqldbConnectionStr();
             SqlConnection coo = new SqlConnection(connectionStr);
             coo.Open();
             SqlCommand sqlCommand = new SqlCommand(SqlHelp.insertMuanySql(this.DbName, DoctableName, new Document[1] { doc }), coo);
-            sqlCommand.ExecuteNonQuery();
-            coo.Close();
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+            }
+            catch (SqlException e) { GlobalMsg.globalMsgHand.Invoke(e.Message); }
+            coo.Dispose();
         }
         public List<Document> GetNotIndexDocument()
         {
             //    documentCollction.UpdateOne(filter, updated1,new UpdateOptions() { IsUpsert=true});
-            string connectionStr = GetSqldbConnectionStr(Ip, this.DbName);
+            string connectionStr = GetSqldbConnectionStr();
             SqlConnection coo = new SqlConnection(connectionStr);
             coo.Open();
-            SqlDataAdapter adp = new SqlDataAdapter("SELECT * FROM[" + this.DbName + "].[dbo].[" + DoctableName + "] where hasIndexed='0'", coo);
+            SqlDataAdapter adp = new SqlDataAdapter("SELECT * FROM[" + this.DbName + "].[dbo].[" + DoctableName + "] where hasIndexed='no'", coo);
             DataSet ds = new DataSet();
             adp.Fill(ds);
             coo.Close();
             return SqlHelp.DataSetToList<Document>(ds);
         }
+
+        public void DelDocumentById(int documentId)
+        {
+            string connectionStr = GetSqldbConnectionStr();
+            SqlConnection coo = new SqlConnection(connectionStr);
+            coo.Open();
+            SqlCommand sqlCommand = new SqlCommand(string.Format(@"DELETE FROM [{0}] WHERE _id = {1}", DoctableName, documentId), coo);
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+            }
+            catch (SqlException e) { GlobalMsg.globalMsgHand.Invoke(e.Message); }
+            coo.Dispose();
+        }
+
+        public List<Document> GetDocuments()
+        {
+            //    documentCollction.UpdateOne(filter, updated1,new UpdateOptions() { IsUpsert=true});
+            string connectionStr = GetSqldbConnectionStr();
+            SqlConnection coo = new SqlConnection(connectionStr);
+            coo.Open();
+            SqlDataAdapter adp = new SqlDataAdapter("SELECT * FROM[" + this.DbName + "].[dbo].[" + DoctableName + "]", coo);
+            DataSet ds = new DataSet();
+            adp.Fill(ds);
+            coo.Close();
+            return SqlHelp.DataSetToList<Document>(ds);
+        }
+
         public Document GetDocumentById(int docid)
         {
-            string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
+            string connectionStr = GetSqldbConnectionStr();
             SqlConnection coo = new SqlConnection(connectionStr);
             coo.Open();
             SqlDataAdapter adp = new SqlDataAdapter("SELECT * FROM[" + this.DbName + "].[dbo].[" + DoctableName + "] where _id='" + docid + "'", coo);
@@ -72,13 +110,13 @@ namespace Sercher
 
             //return documentCollction.Find(x => x._id == docid).First();
         }
-        public int GetDocumentNum()
+        public int GetIndexedDocumentNum()
         {//这儿的where之后改一下
 
-            string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
+            string connectionStr = GetSqldbConnectionStr();
             SqlConnection coo = new SqlConnection(connectionStr);
             coo.Open();
-            SqlDataAdapter adp = new SqlDataAdapter("SELECT count(1) FROM[" + this.DbName + "].[dbo].[" + DoctableName + "] where hasIndexed='"+(int)Document.HasIndexed.Indexed+"'", coo);
+            SqlDataAdapter adp = new SqlDataAdapter("SELECT count(1) FROM[" + this.DbName + "].[dbo].[" + DoctableName + "] where hasIndexed='yes'", coo);
             DataSet ds = new DataSet();
             adp.Fill(ds);
             coo.Dispose();
@@ -87,25 +125,34 @@ namespace Sercher
 
         public void CreateDocumentTable()
         {
-            string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
+            string connectionStr = GetSqldbConnectionStr();
             string sql = SqlHelp.CreateTableSql<Document>(DoctableName);
             var coo = new SqlConnection(connectionStr);
             coo.Open();
             SqlCommand sqlCommand = new SqlCommand(sql.ToString(), coo);
-            int status = sqlCommand.ExecuteNonQuery();
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+            }
+            catch (SqlException e) { GlobalMsg.globalMsgHand.Invoke(e.Message); }
             coo.Dispose();
         }
 
 
-        public void UpdateDocument(Document doc, string ip)
+        public void ResetDocumentIndexStatus()
         {
-            //var filter = Builders<Document>.Filter.Eq(x => x._id, doc._id);
-            //var updated1 = Builders<Document>.Update
-            //    .Set(x => x.hasIndexed, doc.hasIndexed)
-            //    .Set(x => x.Name, doc.Name)
-            //    .Set(x => x.Url, doc.Url);
-            //documentCollction.UpdateOne(filter, updated1, new UpdateOptions() { IsUpsert = false });
-            ////documentCollction.InsertOne(doc);
+            string connectionStr = GetSqldbConnectionStr();
+            SqlConnection coo = new SqlConnection(connectionStr);
+            coo.Open();
+            SqlCommand sqlCommand = new SqlCommand(string.Format("update {0} set hasIndexed='{1}'", DoctableName, "no"), coo);
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+            }
+            catch (SqlException e) { GlobalMsg.globalMsgHand.Invoke(e.Message); }
+            finally {coo.Close(); }
+            
+
         }
 
     }

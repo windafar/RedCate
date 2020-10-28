@@ -44,14 +44,14 @@ namespace developTest_core
         [TestMethod]
         public void TestIndex()
         {
-            Config.Init();
-            foreach (var path in Directory.GetFiles(@"C:\Users\yjdcb\Desktop\新建文件夹", "*.*", SearchOption.AllDirectories)
+            Config.Init(true);
+            foreach (var path in Directory.GetFiles(@"C:\Users\yjdcb\Desktop\temp", "*.*", SearchOption.AllDirectories)
                 .Where(x => x.LastIndexOf(".txt") != -1
                 || x.LastIndexOf(".doc") != -1
                 || x.LastIndexOf(".xls") != -1
                 || x.LastIndexOf(".xhtml") != -1
                 ))
-                (new DocumentDB { DbName = "mydb", Ip = "WIN-T9ASCBISP3P\\MYSQL" }).UploadDocument(new Document() { hasIndexed = (int)Document.HasIndexed.none, Name = new FileInfo(path).Name, Url = path });
+                (new DocumentDB { DbName = "mydb", Ip = "WIN-T9ASCBISP3P\\MYSQL" }).UploadDocument(new Document() { hasIndexed = "no", Name = new FileInfo(path).Name, Url = path });
 
             var se = new SercherServerBase();          
             se.BuildSercherIndexToSQLDB();
@@ -69,6 +69,7 @@ namespace developTest_core
         {
         Config.Init();
           var list= new SercherServerBase().Searcher("头上");
+            
         }
         [TestMethod]
         public void TestInit()

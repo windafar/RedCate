@@ -9,7 +9,7 @@ namespace Sercher
     /// </summary>
     /// <remarks>一个单词对应一个文档，一次文档索引产生多个documentindex</remarks>
     [Serializable]
-    [TableInfo("IndexesTemplateTable")]
+    [TableInfo("TB")]//模板表表名
     public class DocumentIndex
     {
         public DocumentIndex()
@@ -46,7 +46,7 @@ namespace Sercher
         /// <summary>
         /// 索引词语在文中的位置
         /// </summary>
-        [FiledInfo("text")]
+        [FiledInfo("nchar", false, 1024)]
         public string BeginIndex { set; get; }
         /// <summary>
         /// 创建索引时规定的权限，默认为文档的权限

@@ -28,16 +28,20 @@ namespace Sercher
         {
             return this.hashTreeMap.Select(x => x.Value);
         }
+        public IEnumerable<KeyValuePair<long, T>> GetHashNodes()
+        {
+            return this.hashTreeMap.Select(x => x);
+        }
 
         /// <summary>
-        /// 根据单词获取hash映射
+        /// 根据表名获取hash映射
         /// </summary>
-        /// <param name="word">word字符串</param>
+        /// <param name="TableName">word字符串</param>
         /// <returns></returns>
-        protected long GetHashByWord(string word)
+        protected long GetHashByTableName(string TableName)
         {
             var md = MD5.Create();
-            var by = md.ComputeHash(Encoding.UTF8.GetBytes(word));
+            var by = md.ComputeHash(Encoding.UTF8.GetBytes(TableName));
             long result = 0;
             for (int i = 0; i < by.Length; i += 8)
             {
@@ -46,9 +50,9 @@ namespace Sercher
             }
             return result;
         }
-        public T FindCloseServerDBsByValue(string value)
+        public T FindCloseServerDBsByTableName(string TableName)
         {
-            return hashTreeMap.Findbigger(GetHashByWord(value)).Value;
+            return hashTreeMap.Findbigger(GetHashByTableName(TableName)).Value;
         }
 
         /// <summary>
@@ -57,10 +61,10 @@ namespace Sercher
         /// <typeparam name="Key">新的节点的类型</typeparam>
         /// <param name="serverDB">新的节点</param>
         /// <param name="MaxKeySelector">指定提取的排序字段</param>
-        /// <param name="EmigrationSouceMap">待迁出数据。T是待迁出的节点，返回List为表名的集合</param>
+        /// <param name="EmigrationSouceMap">获取待迁徙表名集合</param>
         /// <param name="ImmigrationAction">对迁出数据做出的迁入行为。x是待迁出的每个表名</param>
-        /// <returns>迁移的表名集合</returns>
-        public List<string> AddHashMap(T serverDB,
+        /// <returns>节点及其hash</returns>
+        public Tuple<long,T> AddHashMap(T serverDB,
             Func<KeyValuePair<long, T>, long> MaxKeySelector,
             Func<T, List<string>> EmigrationSouceMap,
             Action<T,List<string>> ImmigrationAction
@@ -71,22 +75,22 @@ namespace Sercher
             long loadMaxhash = hashTreeMap
                  .OrderByDescending(x => MaxKeySelector).First().Key;
             long loadMinhash = hashTreeMap.FindSimler(loadMaxhash).Key;
-            long curNodeHash = (loadMaxhash - loadMinhash) / 2;
+            long curNodeHash = (loadMaxhash + loadMinhash) / 2;
 
             //数据迁移[因涉及非常多的稀疏表，于是采用select into后分离数据库的方式]
             var loadMaxDB = hashTreeMap[loadMaxhash];
 
             var EmigrationSouceMapResult = EmigrationSouceMap(loadMaxDB)
-                 .Where(x => curNodeHash > GetHashByWord(x)).ToList();
+                 .Where(x => curNodeHash > GetHashByTableName(x)).ToList();
 
             ImmigrationAction(loadMaxDB, EmigrationSouceMapResult);
 
             //加入
-            hashTreeMap[curNodeHash] = serverDB;
+            hashTreeMap.Add(curNodeHash,serverDB);
 
             //删除重映射集合
             //waitDelList.ForEach(collection => loadMaxDB.DelCollectionAsync(collection));
-            return EmigrationSouceMapResult;
+            return new Tuple<long, T>(curNodeHash, serverDB);
         }
 
         public void AddHashMap(T serverDB, Func<KeyValuePair<long, T>, long> MaxKeySelector)
@@ -98,10 +102,12 @@ namespace Sercher
             hashTreeMap[curNodeHash] = serverDB;
         }
 
-        public void RemoveHashMap(T serverDB, bool ReSetServerDBCount = true)
+        public void RemoveHashMap(T serverDB)
         {
-            throw new NotImplementedException();
+            var node = hashTreeMap.First(s => s.Value.Equals(serverDB));
+            hashTreeMap.Remove(node.Key);
         }
+
 
     }
 
@@ -174,10 +180,15 @@ namespace Sercher
             while (node != null)
             {
                 if (node.Data.Key < key) temp = node.Data;
-                if (node.Data.Key < key) node = node.Left;
-                else node = node.Right;
+                if (node.Data.Key < key) node = node.Right;
+                else node = node.Left;
             }
-            if (temp.Value == null) throw new KeyNotFoundException();
+            if (temp.Value == null)
+            {
+                var kvnode = FindSimler(HashSpace);
+                if (kvnode.Value == null) throw new KeyNotFoundException();
+                else temp = kvnode;
+            }
             return temp;
         }
         /// <summary>

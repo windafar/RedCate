@@ -7,7 +7,6 @@ using DocumentFormat.OpenXml.Wordprocessing;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using System.Linq;
-using JiebaNet.Segmenter;
 using Component.Default;
 
 namespace Component
