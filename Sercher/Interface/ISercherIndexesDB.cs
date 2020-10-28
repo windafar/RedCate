@@ -34,11 +34,7 @@ namespace Sercher
         /// </summary>
         /// <returns></returns>
         List<string> GetSercherIndexCollectionNameList();
-        /// <summary>
-        /// 获取sql连接
-        /// </summary>
-        /// <returns></returns>
-        SqlConnection GetSercherIndexDb();
+
         /// <summary>
         /// 搜索
         /// </summary>
@@ -67,5 +63,6 @@ namespace Sercher
         /// <param name="tableNamelist">需要迁移的表</param>
         /// <returns></returns>
         object ImmigrationOperation(ISercherIndexesDB maxdb, List<string> tableName);
+        void ClearTable();
     }
 }

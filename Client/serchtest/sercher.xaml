@@ -13,7 +13,8 @@
             <RowDefinition Height="8*"/>
             <RowDefinition Height="67*"/>
         </Grid.RowDefinitions>
-        <TextBox Name="SercherTextBox" TextChanged="SercherTextBox_TextChanged"></TextBox>
+        <TextBox Name="SercherTextBox" TextChanged="SercherTextBox_TextChanged" TextWrapping="Wrap"></TextBox>
+        <Button Name="SercherButton" Click="SercherButton_Click" Width="68" HorizontalAlignment="Right">搜索</Button>
         <ListView Name="SercherListView" Grid.Row="1">
             <ListView.View>
                 <GridView>

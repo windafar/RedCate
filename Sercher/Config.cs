@@ -20,14 +20,18 @@ namespace Sercher
         [XmlIgnore]
         static public Config CurrentConfig;
         [XmlIgnore]
-        static string ConfigFilePath = "Config.xml";
+        static public string ConfigFilePath = "Config.xml";
         private string documentsDBName = "mydb";
-        private string documentsDBIp = "WIN-T9ASCBISP3P\\MYSQL";
+        private string documentsDBIp = "(local)";
         List<SercherIndexesDB> indexesServerlists;
         private int defaultPermission = 0;
-        private string defaultDbDirPath=@"E:";
+        private string defaultDbDirPath= @"F:\indexdir";
         int maxIndexCachWordNum = 100000;
         string indexesServiceName;
+        string defaultDbUserName="sa";
+        string defaultDbPwd="yjdcb";
+        private int maxIndexWordStartLocation=3;
+        private int uploadThreadNum=5;
 
         /// <summary>
         /// 文档数据库名
@@ -57,6 +61,14 @@ namespace Sercher
         /// 指定唯一索引机器名
         /// </summary>
         public string IndexesServiceName { get => indexesServiceName; }
+        public string DefaultDbUserName { get => defaultDbUserName; set => defaultDbUserName = value; }
+        public string DefaultDbPwd { get => defaultDbPwd; set => defaultDbPwd = value; }
+        //索引记录文字位置数
+        public int MaxIndexWordStartLocation { get => maxIndexWordStartLocation; set => maxIndexWordStartLocation = value; }
+        /// <summary>
+        /// 上传索引的线程数
+        /// </summary>
+        public int UploadThreadNum { get => uploadThreadNum; set => uploadThreadNum = value; }
 
         public Config() 
         {
@@ -84,98 +96,58 @@ namespace Sercher
             CurrentConfig = new Config();
             CurrentConfig.IndexesServerlists = new List<SercherIndexesDB>();
             CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseA")
+                     new SercherIndexesDB("(local)", "SercherIndexDatabaseA")
                     );
             CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseB")
+                     new SercherIndexesDB("(local)", "SercherIndexDatabaseB")
                     );
             CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseC")
+                     new SercherIndexesDB("(local)", "SercherIndexDatabaseC")
                     );
             CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseD")
+                     new SercherIndexesDB("(local)", "SercherIndexDatabaseD")
                     );
             CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseE")
+                     new SercherIndexesDB("(local)", "SercherIndexDatabaseE")
                     );
             CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseF")
+                     new SercherIndexesDB("(local)", "SercherIndexDatabaseF")
                     );
             CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseG")
+                     new SercherIndexesDB("(local)", "SercherIndexDatabaseG")
                     );
             CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseH")
+                     new SercherIndexesDB("(local)", "SercherIndexDatabaseH")
                     );
             CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseI")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseI")
+                     new SercherIndexesDB("(local)", "SercherIndexDatabaseI")
                     );
 
             CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseJ")
+                     new SercherIndexesDB("(local)", "SercherIndexDatabaseJ")
                     );
 
             CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseK")
+                     new SercherIndexesDB("(local)", "SercherIndexDatabaseK")
                     );
 
             CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseL")
+                     new SercherIndexesDB("(local)", "SercherIndexDatabaseL")
                     );
 
             CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseM")
+                     new SercherIndexesDB("(local)", "SercherIndexDatabaseM")
                     );
 
             CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseN")
-                    );
-
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseO")
-                    );
-
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseP")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseQ")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseR")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseS")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseT")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseU")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseV")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseW")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseX")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseY")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("WIN-T9ASCBISP3P\\MYSQL", "SercherIndexDatabaseZ")
+                     new SercherIndexesDB("(local)", "SercherIndexDatabaseN")
                     );
 
             //test
             //CurrentConfig.IndexesServerlists.ForEach(x => x.DeleDb());
 
-
+            try
+            {
             //为不存在的索引数据库创建，并初始化模板表
             CurrentConfig.IndexesServerlists.ForEach(x =>
             {
@@ -185,14 +157,13 @@ namespace Sercher
                     x.CreateIndexTemplateTable();
                 }
             });
-            try
-            {
+
                 CurrentConfig.CreateDocumentDB();
                 CurrentConfig.CreateDocumentTable();
             }
             catch (SqlException ex) 
             {
-                Debug.WriteLine("sql异常：" + ex.Message);
+                GlobalMsg.globalMsgHand.Invoke("sql异常：" + ex.Message);
             }
             SaveConfig();
             return CurrentConfig;
@@ -209,7 +180,7 @@ namespace Sercher
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
+                GlobalMsg.globalMsgHand.Invoke(ex.Message);
                 return false;
             }
             return true;
@@ -226,7 +197,7 @@ namespace Sercher
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
+                GlobalMsg.globalMsgHand.Invoke(ex.Message);
                 return false;
             }
             return true;

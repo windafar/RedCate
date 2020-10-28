@@ -4,6 +4,8 @@ namespace Sercher
 {
     public interface IDocumentDB : IServerDB
     {
+        void DelDocumentById(int documentId);
+
         /// <summary>
         /// 获取文档通过文档ID
         /// </summary>
@@ -20,6 +22,7 @@ namespace Sercher
         /// </summary>
         /// <returns></returns>
         List<Document> GetNotIndexDocument();
+        void ResetDocumentIndexStatus();
         void UpdateDocumentStateIndexStatus(int docId, string hasIndexed);
 
         /// <summary>

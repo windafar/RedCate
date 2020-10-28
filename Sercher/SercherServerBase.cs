@@ -15,6 +15,22 @@ using NGenerics.Extensions;
 
 namespace Sercher
 {
+    public delegate void GlobalMsgHand(string msg, object data = null);
+    public class GlobalMsg 
+    {
+        static public GlobalMsgHand globalMsgHand;
+
+        static GlobalMsg() 
+        {
+            globalMsgHand += PrintToDebug;
+        }
+        ~GlobalMsg() { globalMsgHand -= PrintToDebug; }
+
+        private static void PrintToDebug(string msg, object data)
+        {
+            Debug.WriteLine(msg);
+        }
+    }
     public class RelationDocumentResult
     {
         public int documentId { set; get; }
@@ -59,8 +75,7 @@ namespace Sercher
             {
                 var doc = DocumentToatalList[i];
                 documentDB.UpdateDocumentStateIndexStatus(doc._id, "pro_"+Config.CurrentConfig.IndexesServiceName);
-                System.Diagnostics.Stopwatch watch = new Stopwatch();
-                watch.Start();
+
                 IEnumerable<SegmenterToken> textSplit = Pretreatment(doc);
                 Dictionary<string, DocumentIndex> documentIndices = new Dictionary<string, DocumentIndex>();
                 int wordTotal = textSplit.Count();
@@ -69,13 +84,17 @@ namespace Sercher
                 {
                     string word = token.Word.Trim().ToLower();
                     if (!remotewords.Contains(word))
-                        if (!localwords.Contains(word))
+                        if (!localwords.Contains(word)) 
+                        {
                             localwords.Add(word);
+                            remotewords.Add(word);
+                        }
                     //记录一个文档的所有相同词汇
                     if (documentIndices.TryGetValue(word, out DocumentIndex documentIndex))
                     {
                         documentIndex.WordFrequency++;
-                        documentIndex.BeginIndex += ',' + token.StartIndex.ToString();
+                        if(documentIndex.WordFrequency <= Config.CurrentConfig.MaxIndexWordStartLocation)
+                            documentIndex.BeginIndex += ',' + token.StartIndex.ToString();
                         documentIndex.DocumentWordTotal = wordTotal;
                     }
                     else
@@ -114,33 +133,42 @@ namespace Sercher
 
 
                 remainder--;
-                watch.Stop();
-                IndexesProgress?.Invoke(i / DocumentToatalList.Count, "文档："+ doc.Name+" 缓存完成");
+
+                IndexesProgress?.Invoke(i / (double)DocumentToatalList.Count, "文档："+ doc.Name+" 缓存完成");
                 curWordCachNum += documentIndices.Count;
                 documentIndices.Clear();
-                if (Config.CurrentConfig.MaxIndexCachWordNum < curWordCachNum|| i == DocumentToatalList.Count)
+                if (Config.CurrentConfig.MaxIndexCachWordNum < curWordCachNum|| i == DocumentToatalList.Count-1)
                 {
-                    IndexesProgress?.Invoke(i / DocumentToatalList.Count, "以达缓存上限，开始创建表");
+                    IndexesProgress?.Invoke(i / (double)DocumentToatalList.Count, "以达缓存上限，开始创建表");
                     //对每一个同数据库的词汇的脚本进行组合,创建表
                     var group1 = localwords.GroupBy(w => hashLoadBalance.FindCloseServerDBsByTableName(w).DbName).ToArray();
+                    System.Diagnostics.Stopwatch watch = new Stopwatch();
+                    watch.Start();
+
                     Parallel.ForEach(group1, g =>
                      {
                          var wordgroup = g.ToArray();
                          hashLoadBalance.GetServerNodes().First(n => n.DbName == g.Key)//!##GroupKey欠妥，不过数据库比较少的时候影响不大
                          .CreateIndexTable(wordgroup);
-                         IndexesProgress?.Invoke(i / DocumentToatalList.Count, g.Key+ ":一组表创建完成");
+                         IndexesProgress?.Invoke(i / (double)DocumentToatalList.Count, g.Key+ ":一组表创建完成");
                      });
+                    watch.Stop();
+                    IndexesProgress?.Invoke(i / (double)DocumentToatalList.Count, "表创建完成，用时(s)：" + watch.ElapsedMilliseconds/1000);
                     localwords.Clear();
-                    IndexesProgress?.Invoke(i / DocumentToatalList.Count, "开始上传索引");
+                    IndexesProgress?.Invoke(i / (double)DocumentToatalList.Count, "开始上传索引");
                     //对每一个同数据库的词汇的脚本进行组合，上传
                     var group2 = documentIndices_cachList.AsQueryable().GroupBy(kv => hashLoadBalance.FindCloseServerDBsByTableName(kv.Key).DbName).ToArray();
-                    Parallel.ForEach(group2, g =>
+
+                    watch.Restart();
+                    Parallel.ForEach(group2, new ParallelOptions() { MaxDegreeOfParallelism = Config.CurrentConfig.UploadThreadNum },g =>
                      {
                          //上传此db的inser脚本
                          hashLoadBalance.FindCloseServerDBsByTableName(g.First().Key)
                           .UploadDocumentIndex(g.Select(s => s.Value + ";").ToArray());
-                         IndexesProgress?.Invoke(i / DocumentToatalList.Count, g.Key + ":一组索引创建完成");
+                         IndexesProgress?.Invoke(i / (double)DocumentToatalList.Count, g.Key + ":一组索引创建完成");
                      });
+                    watch.Stop();
+                    IndexesProgress?.Invoke(i / (double)DocumentToatalList.Count, "上传索引完成，用时(s)：" + watch.ElapsedMilliseconds / 1000);
 
                     documentIndices_cachList.Clear();
                     while(j<=i)
@@ -149,7 +177,7 @@ namespace Sercher
                         j++;
                     }
                     curWordCachNum = 0;
-                    IndexesProgress?.Invoke(i / DocumentToatalList.Count,"一批上传完成，刷新缓存");
+                    IndexesProgress?.Invoke(i / (double)DocumentToatalList.Count,"一批上传完成，刷新缓存");
                 }
 
             }
@@ -158,6 +186,16 @@ namespace Sercher
 
 
         }
+
+        public void ClearIndexesDocs()
+        {
+            hashLoadBalance.GetServerNodes().AsParallel()
+                .ForAll(db =>
+                {
+                    db.ClearTable();
+                });
+        }
+
         /// <summary>
         /// 对输入文件进行预处理并分词
         /// </summary>
@@ -195,7 +233,8 @@ namespace Sercher
             string Sqlpramslist = "(" + string.Join(",", ProsNamelist) + ")";
             StringBuilder stringBuilder = new StringBuilder();
             if (inserHead)
-                stringBuilder.Append("INSERT INTO [" + DbName + "].[dbo].[" + tableName + "]" + Sqlpramslist + " VALUES ");
+              //stringBuilder.Append("INSERT INTO [" + DbName + "].[dbo].[" + tableName + "]" + Sqlpramslist + " VALUES ");
+                stringBuilder.Append("INSERT INTO [" + tableName + "]"  + " VALUES ");
             foreach (var drow in objList)
             {
                 stringBuilder.Append("(");
@@ -246,7 +285,7 @@ namespace Sercher
         }
         public void RemoveAllDBData()
         {
-            hashLoadBalance.GetServerNodes().ToList().ForEach(x => x.DeleDb());
+            hashLoadBalance.GetServerNodes().ToList().AsParallel().ForAll(x => x.DeleDb());
 
         }
         /// <summary>

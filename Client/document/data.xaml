@@ -9,13 +9,31 @@
       Title="data">
 
     <Grid>
-        <ListView Name="ChartView" Loaded="Chart_Loaded">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="43*"></RowDefinition>
+            <RowDefinition Height="407*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal">
+            <Button Name="SelectBtuuon" Click="SelectBtuuon_Click">上传文件</Button>
+            <Button Name="ResetButton" Click="ResetButton_Click">重置文档状态</Button>
+        </StackPanel>
+        <ListView Name="ChartView" Loaded="Chart_Loaded" Grid.Row="1" ButtonBase.Click="ChartView_Click">
             <ListView.View>
                 <GridView>
                     <GridView.Columns>
-                        <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}"/>
-                        <GridViewColumn Header="hasIndexed" DisplayMemberBinding="{Binding hasIndexed}"/>
-                        <GridViewColumn Header="Url" DisplayMemberBinding="{Binding Url}"/>
+                        <GridViewColumn Width="120" Header="Name" DisplayMemberBinding="{Binding Name}"/>
+                        <GridViewColumn Width="120" Header="hasIndexed" DisplayMemberBinding="{Binding hasIndexed}"/>
+                        <GridViewColumn Width="120" Header="Url" DisplayMemberBinding="{Binding Url}"/>
+                        <GridViewColumn Width="120" Header="">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Name="RemoveButton">Remove</Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
                     </GridView.Columns>
                 </GridView>
             </ListView.View>

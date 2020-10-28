@@ -29,16 +29,6 @@ namespace Client.serchtest
 
         private void SercherTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            SercherListView.ItemsSource =
-            MainWindow.sercherServerBase.Searcher(SercherTextBox.Text)
-                .Select(x => new
-                {
-                    x.documentId,
-                    x.dependency,
-                    x.doc.Name,
-                    x.doc.Url,
-                    x.beginIndex,
-                });
 
         }
 
@@ -58,6 +48,21 @@ namespace Client.serchtest
                     expander.Content += filestr.Substring(strt, end - strt)+"\r\n";
                 }
             }
+        }
+
+        private void SercherButton_Click(object sender, RoutedEventArgs e)
+        {
+            SercherListView.ItemsSource =
+                   MainWindow.sercherServerBase.Searcher(SercherTextBox.Text)
+                       .Select(x => new
+                       {
+                           x.documentId,
+                           x.dependency,
+                           x.doc.Name,
+                           x.doc.Url,
+                           x.beginIndex,
+                       });
+
         }
     }
 }

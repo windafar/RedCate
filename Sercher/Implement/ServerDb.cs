@@ -28,19 +28,22 @@ namespace Sercher
         public string PhysicaTableSuffix { get => physicaTableSuffix; set => physicaTableSuffix = value; }
         public int EachTableMaxItemNum { get => eachTableMaxItemNum; set => eachTableMaxItemNum = value; }
 
-        protected string GetSqldbConnectionStr()
+        public string GetSqldbConnectionStr()
         {
             //"Server=joe;Database=AdventureWorks;User ID=sa;Password=test;pooling=true;connection lifetime=0;min pool size = 1;max pool size=40000"
             //if (ip.IndexOf(":") == -1)
-            return string.Format("Server={0};Database={1};User ID=sa;Password=123456", this.Ip, this.DbName);
+            return string.Format("Server={0};Database={1};User ID={2};Password={3}", this.Ip, this.DbName, Config.CurrentConfig.DefaultDbUserName, Config.CurrentConfig.DefaultDbPwd);
             //else
             // return string.Format("mongodb://{0}", ip);
         }
-        static protected string GetSqldbConnectionStr(string ip, string DatabaseName)
+        public string GetSqldbConnectionStr(string ip, string DatabaseName, string defuser = null, string defpwd = null)
         {
             //"Server=joe;Database=AdventureWorks;User ID=sa;Password=test;pooling=true;connection lifetime=0;min pool size = 1;max pool size=40000"
             //if (ip.IndexOf(":") == -1)
-            return string.Format("Server={0};Database={1};User ID=sa;Password=123456", ip, DatabaseName);
+            if (defuser == null && defpwd == null)
+                return string.Format("Server={0};Database={1};User ID={2};Password={3}", ip, DatabaseName, Config.CurrentConfig.DefaultDbUserName, Config.CurrentConfig.DefaultDbPwd);
+            else return string.Format("Server={0};Database={1};User ID={2};Password={3}", ip, DatabaseName, defuser, defpwd);
+
             //else
             // return string.Format("mongodb://{0}", ip);
         }
@@ -67,7 +70,7 @@ namespace Sercher
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
+                GlobalMsg.globalMsgHand.Invoke(e.Message);
                 return false;
             }
             int value = ds.Tables[0].Rows.Count;
@@ -98,7 +101,7 @@ namespace Sercher
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
+                GlobalMsg.globalMsgHand.Invoke(e.Message);
                 return false;
             }
             coo.Dispose();
@@ -109,14 +112,17 @@ namespace Sercher
             string connectionStr = GetSqldbConnectionStr(this.Ip, "master");
             SqlConnection coo = new SqlConnection(connectionStr);
             coo.Open();
-            SqlCommand sqlCommand = new SqlCommand("drop database " + this.DbName, coo);
+            //SqlCommand sqlCommand = new SqlCommand(string.Format("alter database {0} set offline;drop database {0}", this.DbName), coo);
+            SqlCommand sqlCommand = new SqlCommand(string.Format(@"
+                        ALTER DATABASE [{0}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                        drop database [{0}]", this.DbName), coo);
             try
             {
                 sqlCommand.ExecuteNonQuery();
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
+                GlobalMsg.globalMsgHand.Invoke(e.Message);
             }
             coo.Dispose();
         }
@@ -124,7 +130,7 @@ namespace Sercher
         public Tuple<string, string> GetDbFilePath()
         {
             string sql = string.Format(@"select filename from {0}.dbo.sysfiles", this.DbName);
-            string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
+            string connectionStr = GetSqldbConnectionStr();
             SqlConnection coo = new SqlConnection(connectionStr);
             SqlDataAdapter adp = new SqlDataAdapter(sql, coo);
             DataSet ds = new DataSet();
@@ -136,7 +142,7 @@ namespace Sercher
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
+                GlobalMsg.globalMsgHand.Invoke(e.Message);
                 coo.Dispose();
                 return null;
             }
@@ -144,7 +150,7 @@ namespace Sercher
         }
         public bool BackupTo(string path)
         {
-            string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
+            string connectionStr = GetSqldbConnectionStr();
             SqlConnection coo = new SqlConnection(connectionStr);
             string sql = string.Format(@"Backup database {0} to disk = '{1}'", DbName, path);
             coo.Open();
@@ -156,7 +162,7 @@ namespace Sercher
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
+                GlobalMsg.globalMsgHand.Invoke(e.Message);
                 coo.Dispose();
                 throw e;
                 // return false;
@@ -168,7 +174,7 @@ namespace Sercher
         }
         public bool RestoreFrom(string path)
         {
-            string connectionStr = GetSqldbConnectionStr(this.Ip, this.DbName);
+            string connectionStr = GetSqldbConnectionStr();
             SqlConnection coo = new SqlConnection(connectionStr);
             string sql = string.Format(@"use master;restore database {0} from disk = '{1}' with REPLACE", DbName, path);
             coo.Open();
@@ -180,7 +186,7 @@ namespace Sercher
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
+                GlobalMsg.globalMsgHand.Invoke(e.Message);
                 coo.Dispose();
                 throw e;
             }

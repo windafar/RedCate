@@ -16,10 +16,13 @@
         <ProgressBar Name="IndexesProgressBar" Maximum="1" Minimum="0" ></ProgressBar>
         <TextBlock x:Name="IndexesProgressText" HorizontalAlignment="Right"></TextBlock>
         <StackPanel Grid.RowSpan="1" Orientation="Horizontal">
+            <Button Name="RemoveServiceDb" Click="RemoveServiceDb_Click">初始化索引数据库</Button>
+            <!--<Button Name="ClearIndexesData" Click="ClearIndexesData_Click">清空索引数据</Button>-->
             <Button Name="StartIndexesButton" Click="StartIndexesButton_Click" Margin="12,0,0,0">开始索引</Button>
+            <!--<Button Name="StopIndexButton" Click="StopIndexButton_Click" Margin="12,0,0,0">停止索引</Button>-->
             <Button Name="AddServiceDBButton" Click="AddServiceDBButton_Click" Margin="12,0,0,0">增加服务DB</Button>
         </StackPanel>
-        <ListBox Name="MessageListBox" Grid.Row="1">
+        <ListBox Name="MessageListBox" Unloaded="MessageListBox_Unloaded" Loaded="MessageListBox_Loaded" Grid.Row="1">
         </ListBox>
     </Grid>
 

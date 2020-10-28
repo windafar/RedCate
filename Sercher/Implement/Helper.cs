@@ -399,7 +399,7 @@ namespace Sercher
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
+                GlobalMsg.globalMsgHand.Invoke(ex.Message);
             }
             finally
             {
@@ -428,7 +428,7 @@ namespace Sercher
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
+                GlobalMsg.globalMsgHand.Invoke(ex.Message);
             }
             finally
             {

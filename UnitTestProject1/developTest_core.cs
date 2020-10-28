@@ -45,7 +45,7 @@ namespace developTest_core
         public void TestIndex()
         {
             Config.Init(true);
-            foreach (var path in Directory.GetFiles(@"D:\资料\yuliao\穿越小说2011-5-3\穿越小说2011-5-3", "*.*", SearchOption.AllDirectories)
+            foreach (var path in Directory.GetFiles(@"C:\Users\yjdcb\Desktop\temp", "*.*", SearchOption.AllDirectories)
                 .Where(x => x.LastIndexOf(".txt") != -1
                 || x.LastIndexOf(".doc") != -1
                 || x.LastIndexOf(".xls") != -1
