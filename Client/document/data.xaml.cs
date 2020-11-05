@@ -57,6 +57,7 @@ namespace Client.document
         {
             SelectBtuuon.IsEnabled = false;
             string[] files = SelectFile();
+            if(files!=null)
             foreach (var path in files
                                     .Where(x => x.LastIndexOf(".txt") != -1
                                     || x.LastIndexOf(".doc") != -1

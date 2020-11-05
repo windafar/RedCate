@@ -74,7 +74,7 @@ namespace Sercher
                     {
                         //转变日志模式为完全
                         createBudiler.AppendLine();
-                        createBudiler.AppendLine(string.Format("ALTER DATABASE [{0}] SET RECOVERY full",DbName));
+                 //       createBudiler.AppendLine(string.Format("ALTER DATABASE [{0}] SET RECOVERY full",DbName));
                     }
                     j++; i = 0;
                     SqlCommand sqlCommand = new SqlCommand(createBudiler.ToString(), coo);
@@ -193,7 +193,7 @@ namespace Sercher
                 {
                     if (i == sqls.Count())
                     {//转变日志模式为完全
-                        stringBuilder.AppendLine(string.Format("ALTER DATABASE [{0}] SET RECOVERY full", DbName));
+                //        stringBuilder.AppendLine(string.Format("ALTER DATABASE [{0}] SET RECOVERY full", DbName));
                     }
                     //SqlTransaction transaction = coo.BeginTransaction();
                     SqlCommand sqlCommand = new SqlCommand(stringBuilder.ToString(), coo);
@@ -249,7 +249,7 @@ namespace Sercher
         public void GetSercherResultFromIndexesDB(string word, int doctotal, Action<int, double, IList<int>> resultAction, int pagesize = 10, int pagenum = 1,int permission = 0)
         {
             string func = string.Format(@"DECLARE @ide float
-                    select @ide= LOG({0}.0*10/COUNT(1)) from {4}.dbo.[{1}]
+                    select @ide= LOG({0}.0/COUNT(1)) from {4}.dbo.[{1}]
                     SELECT TOP {2} DocId, WordFrequency*1./DocumentWordTotal*@ide as tfide,BeginIndex
                     FROM(
                      SELECT ROW_NUMBER() OVER (ORDER BY WordFrequency*1./DocumentWordTotal*@ide desc) AS RowNumber,* 

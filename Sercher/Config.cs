@@ -31,7 +31,7 @@ namespace Sercher
         string defaultDbUserName="sa";
         string defaultDbPwd="yjdcb";
         private int maxIndexWordStartLocation=3;
-        private int uploadThreadNum=5;
+        private int uploadThreadNum=2;
 
         /// <summary>
         /// 文档数据库名
