@@ -367,9 +367,45 @@ namespace Sercher
             { coo.Dispose(); }
         }
 
-        public void ReIndexesDocument(Document document)
+        public void RemoveDocumentIndexes(Document document,string[] names)
         {
-            throw new NotImplementedException();
+            string connectionStr = GetSqldbConnectionStr();
+            SqlConnection coo = new SqlConnection(connectionStr);
+            StringBuilder createBudiler = new StringBuilder();
+            //转变日志模式为简单
+            createBudiler.AppendLine(string.Format("ALTER DATABASE [{0}] SET RECOVERY simple", DbName));
+            coo.Open();
+            int i = 0, j = 0;
+            foreach (var name in names)
+            {//为selectinto语句分段执行
+                i++;
+                createBudiler.Append(string.Format(@"DELETE FROM [{0}] WHERE _id = {1}", name,document._id));//从模板创建表
+
+                if (i == 500 || j * 500 + i == names.Count())
+                {
+                    if (j * 500 + i == names.Count())
+                    {
+                        //转变日志模式为完全
+                        createBudiler.AppendLine();
+                        //       createBudiler.AppendLine(string.Format("ALTER DATABASE [{0}] SET RECOVERY full",DbName));
+                    }
+                    j++; i = 0;
+                    SqlCommand sqlCommand = new SqlCommand(createBudiler.ToString(), coo);
+                    sqlCommand.CommandTimeout = 86400;
+
+                    try
+                    {
+                        sqlCommand.ExecuteNonQuery();
+                    }
+                    catch (Exception e)
+                    {
+                        GlobalMsg.globalMsgHand.Invoke(e.Message);
+                    }
+                    createBudiler.Clear();
+                }
+            }
+            coo.Dispose();
+
         }
 
         public void ClearTable()
@@ -400,6 +436,16 @@ namespace Sercher
             //        createBudiler.Clear();
             //    }
             //}
+
+        }
+
+        public object GetRowTotal()
+        {            string connectionStr = GetSqldbConnectionStr();
+            SqlConnection coo = new SqlConnection(connectionStr);
+            SqlDataAdapter adp = new SqlDataAdapter("SELECT SUM(rows) from sysobjects as a join sysindexes b on a.id = b.id and xtype = 'U'", coo);
+            DataSet ds = new DataSet();
+            adp.Fill(ds);
+            return (int)ds.Tables[0].Rows[0].ItemArray[0];
 
         }
     }

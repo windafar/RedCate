@@ -17,6 +17,8 @@
                         <GridViewColumn Header="ip" DisplayMemberBinding="{Binding ip}"/>
                         <GridViewColumn Header="database" DisplayMemberBinding="{Binding database}"/>
                         <GridViewColumn Header="collection" DisplayMemberBinding="{Binding value}"/>
+                        <GridViewColumn Header="totalvalue" DisplayMemberBinding="{Binding totalvalue}"/>
+
                         <GridViewColumn Header="">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>

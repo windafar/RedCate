@@ -25,13 +25,13 @@ namespace Sercher
         private string documentsDBIp = "(local)";
         List<SercherIndexesDB> indexesServerlists;
         private int defaultPermission = 0;
-        private string defaultDbDirPath= @"F:\indexdir";
+        private string defaultDbDirPath= @"E:\indexdir";
         int maxIndexCachWordNum = 100000;
         string indexesServiceName;
         string defaultDbUserName="sa";
         string defaultDbPwd="yjdcb";
         private int maxIndexWordStartLocation=3;
-        private int uploadThreadNum=2;
+        private int uploadThreadNum=3;
 
         /// <summary>
         /// 文档数据库名
@@ -95,52 +95,9 @@ namespace Sercher
             if (!reinit && (CurrentConfig != null|| Config.LoadConfig())) return CurrentConfig;
             CurrentConfig = new Config();
             CurrentConfig.IndexesServerlists = new List<SercherIndexesDB>();
+            for(int n=1;n<=5;n++)
             CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("(local)", "SercherIndexDatabaseA")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("(local)", "SercherIndexDatabaseB")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("(local)", "SercherIndexDatabaseC")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("(local)", "SercherIndexDatabaseD")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("(local)", "SercherIndexDatabaseE")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("(local)", "SercherIndexDatabaseF")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("(local)", "SercherIndexDatabaseG")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("(local)", "SercherIndexDatabaseH")
-                    );
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("(local)", "SercherIndexDatabaseI")
-                    );
-
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("(local)", "SercherIndexDatabaseJ")
-                    );
-
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("(local)", "SercherIndexDatabaseK")
-                    );
-
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("(local)", "SercherIndexDatabaseL")
-                    );
-
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("(local)", "SercherIndexDatabaseM")
-                    );
-
-            CurrentConfig.IndexesServerlists.Add(
-                     new SercherIndexesDB("(local)", "SercherIndexDatabaseN")
+                     new SercherIndexesDB("(local)", "SercherIndexDatabase"+n)
                     );
 
             //test

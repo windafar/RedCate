@@ -78,9 +78,20 @@ namespace Client.document
         private void ChartView_Click(object sender, RoutedEventArgs e)
         {
             var elem = e.OriginalSource as FrameworkElement;
-            if (elem != null&& elem.DataContext as Document!= null) 
+            if (elem != null && elem.DataContext as Document != null)
             {
-                documentDB.DelDocumentById((elem.DataContext as Document)._id);
+                if (elem.Name == "RemoveButton")
+                    documentDB.DelDocumentById((elem.DataContext as Document)._id);
+                else if (elem.Name == "RemoveIndexButton")
+                {
+                    elem.IsEnabled = false;
+                    documentDB.ResetDocumentIndexStatus((elem.DataContext as Document)._id);
+                    if(MessageBox.Show("是否移除索引","",MessageBoxButton.YesNo, MessageBoxImage.Question)==  MessageBoxResult.Yes)
+                        MainWindow.sercherServerBase.RemoveIndexByDoc((elem.DataContext as Document));
+                    
+                    elem.IsEnabled = true;
+
+                }
             }
         }
     }

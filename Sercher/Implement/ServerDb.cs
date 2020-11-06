@@ -122,9 +122,10 @@ namespace Sercher
             }
             catch (Exception e)
             {
+                coo.Dispose();
                 GlobalMsg.globalMsgHand.Invoke(e.Message);
             }
-            coo.Dispose();
+
         }
 
         public Tuple<string, string> GetDbFilePath()

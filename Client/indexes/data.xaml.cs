@@ -35,6 +35,7 @@ namespace Client.indexes
                  .Select((x => new
                  {
                      value = x.Value.GetSercherIndexCollectionCount(),
+                     totalvalue=x.Value.GetRowTotal(),
                      database = x.Value.DbName,
                      ip=x.Value.Ip,
                      hash = x.Key,

@@ -29,6 +29,7 @@
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
                                         <Button Name="RemoveButton">Remove</Button>
+                                        <Button Name="RemoveIndexButton">RemoveIndex</Button>
                                     </StackPanel>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>

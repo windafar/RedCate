@@ -22,8 +22,8 @@ namespace Sercher
         /// <summary>
         /// 重索引文档
         /// </summary>
-        /// <param name="document"></param>
-        void ReIndexesDocument(Document document);
+        /// <param name="doc"></param>
+        void RemoveDocumentIndexes(Document doc,string[] words);
         /// <summary>
         /// 获取索引表数目
         /// </summary>
@@ -34,6 +34,7 @@ namespace Sercher
         /// </summary>
         /// <returns></returns>
         List<string> GetSercherIndexCollectionNameList();
+        object GetRowTotal();
 
         /// <summary>
         /// 搜索

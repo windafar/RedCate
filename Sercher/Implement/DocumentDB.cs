@@ -155,5 +155,21 @@ namespace Sercher
 
         }
 
+        public void ResetDocumentIndexStatus(int docId)
+        {
+            string connectionStr = GetSqldbConnectionStr();
+            SqlConnection coo = new SqlConnection(connectionStr);
+            coo.Open();
+            SqlCommand sqlCommand = new SqlCommand(string.Format("update {0} set hasIndexed='{1}' where _id={2}", DoctableName, "no",docId), coo);
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+            }
+            catch (SqlException e) { GlobalMsg.globalMsgHand.Invoke(e.Message); }
+            finally { coo.Close(); }
+
+
+        }
+
     }
 }

@@ -23,6 +23,7 @@ namespace Sercher
         /// <returns></returns>
         List<Document> GetNotIndexDocument();
         void ResetDocumentIndexStatus();
+        void ResetDocumentIndexStatus(int docId);
         void UpdateDocumentStateIndexStatus(int docId, string hasIndexed);
 
         /// <summary>
